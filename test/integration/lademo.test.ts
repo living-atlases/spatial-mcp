@@ -8,6 +8,7 @@
  * The write test creates a layer named mcp_poc_<timestamp> from a 3-polygon WGS84 shapefile, waits for
  * LayerCreation and FieldCreation (not for the tabulation chain), checks it the way the wiki's step 8 does,
  * checks that the admin UI pages still render it, and deletes it in a finally block.
+ * With SPATIAL_TEST_KEEP_LAYER=1 it also adds mcp_demo_regions and leaves it there (for demos/screenshots).
  */
 import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
@@ -123,6 +124,17 @@ describe("spatial-service (real)", { skip: !URL_ && "SPATIAL_TEST_URL not set" }
         if (uploadId && uploadId !== layerId) await call("spatial_delete", { id: uploadId, kind: "upload", confirm: true });
       }
       if (layerId) assert.ok(!(await client.layers()).some((l) => String(l.id) === String(layerId)), "cleaned up");
+    });
+
+    test("keep a demo layer (mcp_demo_regions)", { skip: !process.env["SPATIAL_TEST_KEEP_LAYER"] && "SPATIAL_TEST_KEEP_LAYER not set" }, async () => {
+      const name = "mcp_demo_regions";
+      if ((await client.layers()).some((l) => l.name === name)) return;
+      const dir = mkdtempSync(join(tmpdir(), "spatial-mcp-demo-"));
+      const zip = join(dir, `${name}.zip`);
+      writeFileSync(zip, shapefileZip(name));
+      const r = await call("spatial_add_layer", { path: zip, name, displayname: "MCP demo regions", description: "Added by spatial-mcp (POC) for demos", classification1: "MCP POC", classification2: "Demo", sname: "NAME", layerWaitMinutes: TASK_TIMEOUT / 60_000, dryRun: false, confirm: true });
+      assert.equal(r.isError, false, r.text);
+      console.log(`demo layer: layer ${r.json.layerId}, field ${r.json.fieldIds?.[0]}`);
     });
   });
 });

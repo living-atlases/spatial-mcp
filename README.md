@@ -50,12 +50,16 @@ You need:
 git clone https://github.com/vjrj/spatial-mcp
 cd spatial-mcp
 npm ci
+npm run build
 ```
+
+This leaves the server in `dist/stdio.js`. Below, replace `/path/to/spatial-mcp` with the full path of the folder
+you cloned (`pwd` shows it). Use the full path: the assistant starts the server from another folder.
 
 Add it to Claude Code (one line; adapt the address and your account):
 
 ```bash
-claude mcp add spatial -e SPATIAL_USERNAME=you@example.org -e SPATIAL_PASSWORD=your-password -e SPATIAL_ALLOWED_DIRS=/home/you/layers -- npx tsx /path/to/spatial-mcp/src/stdio.ts --spatial https://spatial.l-a.site/ws
+claude mcp add spatial -e SPATIAL_USERNAME=you@example.org -e SPATIAL_PASSWORD=your-password -e SPATIAL_ALLOWED_DIRS=/home/you/layers -- node /path/to/spatial-mcp/dist/stdio.js --spatial https://spatial.l-a.site/ws
 ```
 
 For Claude Desktop, add the same to `claude_desktop_config.json`:
@@ -64,8 +68,8 @@ For Claude Desktop, add the same to `claude_desktop_config.json`:
 {
   "mcpServers": {
     "spatial": {
-      "command": "npx",
-      "args": ["tsx", "/path/to/spatial-mcp/src/stdio.ts", "--spatial", "https://spatial.l-a.site/ws"],
+      "command": "node",
+      "args": ["/path/to/spatial-mcp/dist/stdio.js", "--spatial", "https://spatial.l-a.site/ws"],
       "env": {
         "SPATIAL_USERNAME": "you@example.org",
         "SPATIAL_PASSWORD": "your-password",
@@ -83,8 +87,11 @@ For Claude Desktop, add the same to `claude_desktop_config.json`:
 | `SPATIAL_ALLOWED_DIRS` | Folders the assistant may upload zips from (recommended) |
 | `SPATIAL_READONLY=1` | Look, don't touch: every change is refused (previews still work) |
 
+Restart Claude Desktop after editing the file (in Claude Code, `claude mcp list` shows whether it connected).
 Then ask *"Is the spatial MCP working?"*: it answers with the portal version, the number of layers and whether
 your admin access works.
+
+To update it later: `git pull && npm ci && npm run build` in the same folder, then restart the assistant.
 
 ## Adding a layer, step by step
 

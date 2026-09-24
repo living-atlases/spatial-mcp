@@ -19,12 +19,14 @@ pipeline {
         OIDC_ISSUER = "${params.OIDC_ISSUER ?: 'https://auth.l-a.site/cas/oidc'}"
         INVENTORY_DIR = "${params.INVENTORY_DIR ?: '${HOME}/ala-install-docker-tests/lademo/lademo-inventories'}"
         RUN_WRITE_TESTS = "${params.RUN_WRITE_TESTS == null ? true : params.RUN_WRITE_TESTS}"
+        SPATIAL_TEST_KEEP_LAYER = "${params.KEEP_DEMO_LAYER ? '1' : ''}"
     }
     parameters {
         string(name: 'SPATIAL_TEST_URL', defaultValue: 'https://spatial.l-a.site/ws', description: 'spatial-service under test (base URL including /ws)')
         string(name: 'OIDC_ISSUER', defaultValue: 'https://auth.l-a.site/cas/oidc', description: 'OIDC issuer of that stack')
         string(name: 'INVENTORY_DIR', defaultValue: '${HOME}/ala-install-docker-tests/lademo/lademo-inventories', description: 'lademo inventory with lademo-local-passwords.ini')
         booleanParam(name: 'RUN_WRITE_TESTS', defaultValue: true, description: 'Create and delete an mcp_poc_* layer on the stack (needs the admin credentials of the inventory)')
+        booleanParam(name: 'KEEP_DEMO_LAYER', defaultValue: false, description: 'Also add the layer mcp_demo_regions and leave it on the stack (for demos and screenshots; skipped if it exists; a redeploy removes it)')
     }
     stages {
         stage('Unit tests') {
@@ -65,7 +67,7 @@ pipeline {
                 sh '''
                     set -eu
                     set +x
-                    export SPATIAL_TEST_URL="${SPATIAL_TEST_URL}"
+                    export SPATIAL_TEST_URL="${SPATIAL_TEST_URL}" SPATIAL_TEST_KEEP_LAYER="${SPATIAL_TEST_KEEP_LAYER}"
                     INV=$(eval echo "${INVENTORY_DIR}")
                     PW="$INV/lademo-local-passwords.ini"
                     if [ "${RUN_WRITE_TESTS}" = "true" ] && [ -f "$PW" ]; then
