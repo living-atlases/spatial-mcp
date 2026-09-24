@@ -26,7 +26,7 @@ pipeline {
         string(name: 'OIDC_ISSUER', defaultValue: 'https://auth.l-a.site/cas/oidc', description: 'OIDC issuer of that stack')
         string(name: 'INVENTORY_DIR', defaultValue: '${HOME}/ala-install-docker-tests/lademo/lademo-inventories', description: 'lademo inventory with lademo-local-passwords.ini')
         booleanParam(name: 'RUN_WRITE_TESTS', defaultValue: true, description: 'Create and delete an mcp_poc_* layer on the stack (needs the admin credentials of the inventory)')
-        booleanParam(name: 'KEEP_DEMO_LAYER', defaultValue: false, description: 'Also add the layer mcp_demo_regions and leave it on the stack (for demos and screenshots; skipped if it exists; a redeploy removes it)')
+        booleanParam(name: 'KEEP_DEMO_LAYER', defaultValue: false, description: 'Also add the layers mcp_demo_regions and mcp_demo_ccaa and leave them on the stack (for demos and screenshots; skipped if it exists; a redeploy removes it)')
     }
     stages {
         stage('Unit tests') {
