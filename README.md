@@ -97,14 +97,14 @@ To update it later: `git pull && npm ci && npm run build` in the same folder, th
 
 1. **Prepare the zip.** One layer per zip: a shapefile (SHP, SHX, DBF, PRJ) or a grid (HDR, BIL, PRJ), in WGS84,
    with the DBF in ISO-8859-1. A GeoTIFF has to be converted first (`gdal_translate -of EHdr …`).
-2. **Ask the assistant to check it:** *"Check ~/layers/comarcas.zip"*. It tells you what is wrong, if anything,
+2. **Ask the assistant to check it:** *"Check ~/layers/ibra7_regions.zip"*. It tells you what is wrong, if anything,
    and which column looks like the name of each area.
-3. **Ask for the layer:** *"Add ~/layers/comarcas.zip as a contextual layer called `comarcas`, shown as
-   'Comarcas', under Area Management > Administrative, with the COMARCA column as the name of each area."*
+3. **Ask for the layer:** *"Add ~/layers/ibra7_regions.zip as a contextual layer called `ibra7_regions`, shown as
+   'IBRA 7 Regions', under Biodiversity > Region, with the REG_NAME_7 column as the name of each area."*
    It shows you a **preview** of exactly what it will fill in on the admin form. Nothing has been changed yet.
 4. **Say yes.** It uploads, creates the layer and the field, and waits for the tasks. Small layers finish in a
    few minutes; for big ones it tells you it is still working and checks back when you ask.
-5. **Check it:** *"Check the new layer with a point in Zaragoza."* It runs the wiki's checks and tells you which
+5. **Check it:** *"Check the new layer with a point in Canberra."* It runs the wiki's checks and tells you which
    ones pass.
 
 You can also do it one step at a time (*"just upload it"*, *"now create the field"*), exactly like in the admin pages.
@@ -114,9 +114,10 @@ the check in step 5 tells you so. Everything else (areas, search, map) works str
 
 ### What the result looks like
 
-A layer added this way on the LA demo portal: Spain's autonomous communities, from a Natural Earth shapefile
-([`test/fixtures/mcp_demo_ccaa.zip`](test/fixtures/mcp_demo_ccaa.zip)), with the accented names read correctly
-from the ISO-8859-1 DBF. It shows up in the portal like any layer added by hand:
+A layer added this way on the LA demo portal: Australia's states and territories, from a Natural Earth shapefile
+([`test/fixtures/mcp_demo_aus_states.zip`](test/fixtures/mcp_demo_aus_states.zip)). It shows up in the portal like
+any layer added by hand, and after the restart mentioned above a point query answers with the state
+(`/ws/intersect/cl10004/-23.70/133.88` → *Northern Territory*):
 
 ![The layer in the portal's list of layers](docs/img/layers-list.png)
 
@@ -127,7 +128,7 @@ from the ISO-8859-1 DBF. It shows up in the portal like any layer added by hand:
 ## More things to ask
 
 - *"Which layers do we have under Area Management?"*
-- *"Move the layer `comarcas` to Political > Regions and set the licence to CC BY."*
+- *"Move the layer `ibra7_regions` to Biodiversity > Region and set the licence to CC BY."*
 - *"Hide the layer `test_old`"* (disable it) or *"delete the layer `mcp_poc_…` and its upload."*
 - *"What tasks failed this week? Show me the log of the last FieldCreation."*
 - *"Re-run the thumbnails."*
