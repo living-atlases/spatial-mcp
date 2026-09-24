@@ -67,7 +67,7 @@ pipeline {
                 sh '''
                     set -eu
                     set +x
-                    export SPATIAL_TEST_URL="${SPATIAL_TEST_URL}" SPATIAL_TEST_KEEP_LAYER="${SPATIAL_TEST_KEEP_LAYER}"
+                    export SPATIAL_TEST_URL="${SPATIAL_TEST_URL}" SPATIAL_TEST_KEEP_LAYER="${SPATIAL_TEST_KEEP_LAYER:-}"
                     INV=$(eval echo "${INVENTORY_DIR}")
                     PW="$INV/lademo-local-passwords.ini"
                     if [ "${RUN_WRITE_TESTS}" = "true" ] && [ -f "$PW" ]; then
