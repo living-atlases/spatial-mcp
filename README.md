@@ -47,7 +47,7 @@ You need:
 ## Install
 
 ```bash
-git clone https://github.com/vjrj/spatial-mcp
+git clone https://github.com/living-atlases/spatial-mcp
 cd spatial-mcp
 npm ci
 npm run build
