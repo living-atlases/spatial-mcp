@@ -1,3 +1,7 @@
 mcp_demo_ccaa.zip: Spain's autonomous communities, dissolved from Natural Earth 1:10m Admin 1 – States, Provinces
 (https://www.naturalearthdata.com/, public domain), simplified (0.003°), WGS84, DBF in ISO-8859-1.
 Made with: ogr2ogr -dialect SQLite (ST_Union of adm0_a3='ESP' by region) -simplify 0.003 -lco ENCODING=ISO-8859-1
+
+mcp_demo_aus_states.zip: Australia's states and territories from the same Natural Earth layer (adm0_a3='AUS'),
+Lord Howe Island merged into New South Wales and Macquarie Island into Tasmania, simplified (0.005°), WGS84,
+DBF in ISO-8859-1.

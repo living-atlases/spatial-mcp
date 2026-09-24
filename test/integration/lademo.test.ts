@@ -8,7 +8,7 @@
  * The write test creates a layer named mcp_poc_<timestamp> from a 3-polygon WGS84 shapefile, waits for
  * LayerCreation and FieldCreation (not for the tabulation chain), checks it the way the wiki's step 8 does,
  * checks that the admin UI pages still render it, and deletes it in a finally block.
- * With SPATIAL_TEST_KEEP_LAYER=1 it also adds mcp_demo_regions and mcp_demo_ccaa and leaves them there.
+ * With SPATIAL_TEST_KEEP_LAYER=1 it also adds the mcp_demo_* layers and leaves them there.
  */
 import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
@@ -129,10 +129,12 @@ describe("spatial-service (real)", { skip: !URL_ && "SPATIAL_TEST_URL not set" }
       if (layerId) assert.ok(!(await client.layers()).some((l) => String(l.id) === String(layerId)), "cleaned up");
     });
 
-    // Demo layers left on the stack (for demos/screenshots): the synthetic regions and a real one, Spain's
-    // autonomous communities from Natural Earth (public domain; accented names in an ISO-8859-1 DBF).
+    // Demo layers left on the stack (for demos/screenshots): the synthetic regions and real ones from Natural
+    // Earth (public domain): Australia's states and territories, and Spain's autonomous communities (accented
+    // names in an ISO-8859-1 DBF).
     const demos = [
       { name: "mcp_demo_regions", zip: () => shapefileZip("mcp_demo_regions"), displayname: "MCP demo regions", description: "Synthetic regions added by spatial-mcp (POC)", classification2: "Demo" },
+      { name: "mcp_demo_aus_states", zip: () => readFileSync(new URL("../fixtures/mcp_demo_aus_states.zip", import.meta.url)), displayname: "Australian States and Territories (MCP demo)", description: "Australia's states and territories, Natural Earth 1:10m admin-1 (public domain), added by spatial-mcp (POC)", classification2: "Political" },
       { name: "mcp_demo_ccaa", zip: () => readFileSync(new URL("../fixtures/mcp_demo_ccaa.zip", import.meta.url)), displayname: "Comunidades autónomas de España (MCP demo)", description: "Spain's autonomous communities, Natural Earth 1:10m admin-1 (public domain), added by spatial-mcp (POC)", classification2: "Political" },
     ];
     for (const d of demos)
