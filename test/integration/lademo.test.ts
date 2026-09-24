@@ -88,8 +88,8 @@ describe("spatial-service (real)", { skip: !URL_ && "SPATIAL_TEST_URL not set" }
       let layerId: string | undefined;
       try {
         const r = await call("spatial_add_layer", { path: zip, name, displayname: `MCP POC ${name.slice(8)}`, classification1: "MCP POC", classification2: "Test", sname: "NAME", layerWaitMinutes: TASK_TIMEOUT / 60_000, dryRun: false, confirm: true });
+        uploadId = r.json?.uploadId ?? r.text.match(/\(upload (\d+)\)/)?.[1];
         assert.equal(r.isError, false, r.text);
-        uploadId = r.json.uploadId;
         layerId = r.json.layerId;
         assert.ok(layerId, r.text);
         assert.ok(r.json.layerTasks.every((t: { verdict: string }) => t.verdict === "success"), r.text);

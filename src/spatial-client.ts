@@ -1,3 +1,4 @@
+import * as cheerio from "cheerio";
 import createClient from "openapi-fetch";
 import type { paths } from "./api.gen.ts";
 import type { Auth } from "./auth.ts";
@@ -10,7 +11,7 @@ export class SpatialError extends Error {
     readonly status: number,
     readonly body: string,
   ) {
-    super(`spatial-service ${path} -> ${status}${status === 401 || status === 403 ? " (needs a logged-in user with the admin role: configure SPATIAL_TOKEN or the SPATIAL_OIDC_* variables)" : ""}: ${body.slice(0, 500)}`);
+    super(`spatial-service ${path} -> ${status}${status === 401 || status === 403 ? " (needs a logged-in user with the admin role: configure SPATIAL_USERNAME and SPATIAL_PASSWORD)" : ""}: ${body.slice(0, 500)}`);
   }
 }
 
@@ -104,8 +105,9 @@ export class SpatialClient {
 
   // ---------- admin UI endpoints (/manageLayers, /tasks admin views), not in the spec ----------
 
-  manageLayers = () => this.json<Record<string, unknown>>("/manageLayers/layers.json", { user: true });
-  uploads = () => this.json<Record<string, unknown>>("/manageLayers/uploads.json", { user: true });
+  /** The admin "layers" and "uploads" pages only render HTML (no JSON format): read their table. */
+  manageLayers = async () => htmlTable(await this.html("/manageLayers/layers"));
+  uploads = async () => htmlTable(await this.html("/manageLayers/uploads"));
   layerJson = (id: string) => this.json<LayerAdmin>(`/manageLayers/layer/${id}.json`, { user: true });
   fieldJson = (id: string) => this.json<Record<string, unknown>>(`/manageLayers/field/${id}.json`, { user: true });
   layerForm = (id: string) => this.html(`/manageLayers/layer/${id}`);
@@ -192,11 +194,11 @@ export class SpatialClient {
     return res;
   }
 
-  /** 401/403, or a redirect away from spatial-service (to the login page). */
+  /** 401/403, or a redirect out of spatial-service (/ws), i.e. to the login page. */
   private needsLogin(res: Response): boolean {
     if (res.status === 401 || res.status === 403) return true;
     const loc = res.status >= 300 && res.status < 400 ? res.headers.get("location") : null;
-    return !!loc && new URL(loc, this.baseUrl).origin !== new URL(this.baseUrl).origin;
+    return !!loc && !new URL(loc, this.baseUrl).toString().startsWith(this.baseUrl + "/");
   }
 
   private async json<T>(path: string, o: Parameters<SpatialClient["raw"]>[1] = {}): Promise<T> {
@@ -225,6 +227,20 @@ export class SpatialClient {
     if (!res.ok) throw new SpatialError(path, res.status, text);
     return text;
   }
+}
+
+/** First table of an admin page as objects keyed by the header cells. */
+export function htmlTable(html: string): Array<Record<string, string>> {
+  const $ = cheerio.load(html);
+  const table = $("table").filter((_, t) => $(t).find("th").length > 0).first();
+  const heads = table.find("thead th").toArray().map((th, i) => $(th).text().trim() || `col${i}`);
+  const rows: Array<Record<string, string>> = [];
+  for (const tr of table.find("tbody tr").toArray()) {
+    const row: Record<string, string> = {};
+    $(tr).find("td").toArray().forEach((td, i) => (row[heads[i] ?? `col${i}`] = $(td).text().replace(/\s+/g, " ").trim()));
+    if (Object.values(row).some(Boolean)) rows.push(row);
+  }
+  return rows;
 }
 
 function redirectTarget(res: Response): URL | undefined {

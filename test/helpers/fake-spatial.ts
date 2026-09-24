@@ -109,9 +109,10 @@ export async function startFakeSpatial(opts: { adminToken?: string; failTask?: s
     if (p === "/shape/upload/wkt" && req.method === "POST") return json(200, { id: 777 });
 
     // ---- admin UI (ManageLayersController) ----
-    if (p === "/manageLayers/layers") return res.writeHead(200, { "Content-Type": "text/html" }).end(`<html><body>${[...state.layers.values()].map((l) => `<tr><td>${l["name"]}</td></tr>`).join("")}</body></html>`);
-    if (p === "/manageLayers/layers.json") return json(200, { layers: [...state.layers.values()] });
-    if (p === "/manageLayers/uploads.json") return json(200, { files: [...state.uploads.keys()] });
+    // like the real views, these two pages only render HTML
+    const table = (heads: string[], rows: string[][]) => res.writeHead(200, { "Content-Type": "text/html" }).end(`<html><body><table><thead><tr>${heads.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.map((r) => `<tr>${r.map((c) => `<td> ${c} </td>`).join("")}</tr>`).join("")}</tbody></table></body></html>`);
+    if (p === "/manageLayers/layers") return table(["Date added", "Id", "Name", "Display Name", "Enabled"], [...state.layers.values()].map((l) => ["2026-09-24", String(l["id"]), String(l["name"]), String(l["displayname"] ?? ""), String(l["enabled"])]));
+    if (p === "/manageLayers/uploads") return table(["Date", "Raw Id", "Filename", "Layer Id"], [...state.uploads.entries()].map(([id, u]) => ["2026-09-24", id, "id.zip", u.layerId ?? ""]));
     if (p === "/manageLayers/upload" && req.method === "POST") {
       const zip = multipartFile(await readBody(req), req.headers["content-type"] ?? "");
       const i = inspectLayerZip(zip);

@@ -3,6 +3,7 @@ import { test } from "node:test";
 import { evaluate, renderGspForm } from "../scripts/render-gsp.mjs";
 import { loadConfig, secretsOf } from "../src/config.ts";
 import { Redactor } from "../src/redact.ts";
+import { htmlTable } from "../src/spatial-client.ts";
 import { summarizeTask } from "../src/task-outcome.ts";
 
 test("task verdicts follow Task.groovy (0 queued .. 4 finished) and the log is ordered", () => {
@@ -36,4 +37,9 @@ test("the GSP renderer understands the expressions the manageLayers views use", 
   assert.equal(evaluate('has_layer ? "Update Layer" : "Create Layer"', { has_layer: false }), "Create Layer");
   const html = renderGspForm('<p><form method="POST"><g:if test="${a}"><input name="x" value="${v}"/></g:if><g:each in="${cols}" var="c"><option value="${c}"/></g:each></form></p>', { a: true, v: 'a"b', cols: ["A", "B"] });
   assert.equal(html, '<form method="POST"><input name="x" value="a&quot;b"/><option value="A"/><option value="B"/></form>');
+});
+
+test("admin list pages are read from their HTML table", () => {
+  const rows = htmlTable("<table><thead><tr><th>Id</th><th>Name</th><th></th></tr></thead><tbody><tr><td> 12 </td><td>comarcas\n x</td><td><a>Edit</a></td></tr><tr><td></td></tr></tbody></table>");
+  assert.deepEqual(rows, [{ Id: "12", Name: "comarcas x", col2: "Edit" }]);
 });

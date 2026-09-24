@@ -123,7 +123,13 @@ discovery for MCP clients (they need to obtain the token themselves).
 4. **The spec and the code disagree on `/tasks/create`**: the spec documents a query parameter `inputs`,
    `TasksController.create` reads `input` (query) or a JSON body `{name, input}`.
 5. **FieldCreation tasks are keyed by field id**, so they are listed on the field page, not on the layer page.
-6. On the LA demo stack `/tasks/capabilities` returns `{}` anonymously (spatial.ala.org.au returns 16 public
+6. `/manageLayers/layers` and `/manageLayers/uploads` have no JSON format (the actions return a model for the GSP
+   only), so the lists are read from the HTML tables.
+7. On the LA demo stack (Jenkins `spatial-mcp-tests` #2, 2026-09-24) creating a layer fails with
+   `relation "layers_id_seq" does not exist`: the layers database lacks the sequence that
+   `docker/postgres/init_layersdb.sql` creates and `ManageLayersService.createOrUpdateLayer` uses
+   (`nextval('layers_id_seq')`). It fails the same way from the admin UI; it is a deployment bug, not an MCP one.
+8. On the LA demo stack `/tasks/capabilities` returns `{}` anonymously (spatial.ala.org.au returns 16 public
    analyses), so `spatial_run_task` cannot pre-check inputs there; the server still validates them.
 
 What would make this safe by design, and could be proposed upstream:

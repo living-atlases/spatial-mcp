@@ -203,7 +203,12 @@ export function createServer(deps: ServerDeps): McpServer {
     if (inspection.kind === "shapefile" && !field.sname) throw new Error(`"sname" is needed for a contextual layer; suggested DBF columns: ${(inspection.suggestedSname ?? []).join(", ")}`);
     if (mustConfirm(a)) return { dryRun: true, inspection, layer: wf.previewLayer(layer), field: wf.previewField(field) };
     const { uploadId } = await wf.upload(zip, a.path);
-    const created = await wf.createLayer(uploadId, layer);
+    let created: Awaited<ReturnType<typeof wf.createLayer>>;
+    try {
+      created = await wf.createLayer(uploadId, layer);
+    } catch (e) {
+      throw new Error(`the zip was uploaded (upload ${uploadId}) but creating the layer failed: ${(e as Error).message}. Retry with spatial_create_layer {uploadId: "${uploadId}"} or remove it with spatial_delete {id: "${uploadId}", kind: "upload"}`);
+    }
     const layerId = created.layerId ?? uploadId;
     const creation = (await wf.layerTasks(uploadId)).tasks.filter((t) => t.name === "LayerCreation").map((t) => t.id);
     const waited = creation.length ? await wf.waitTasks(creation, a.layerWaitMinutes * 60_000) : [];
