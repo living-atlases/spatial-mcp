@@ -10,7 +10,7 @@ pipeline {
     options {
         disableConcurrentBuilds()
         timestamps()
-        timeout(time: 90, unit: 'MINUTES')
+        timeout(time: 240, unit: 'MINUTES')
     }
     triggers { cron('H 5 * * *') }
     environment {
@@ -39,14 +39,21 @@ pipeline {
             steps {
                 script {
                     // Do not run while the stack is being wiped/redeployed.
-                    timeout(time: 60, unit: 'MINUTES') {
+                    // Read its state from JENKINS_HOME (this runs on the controller): the public API sits behind
+                    // an anti-bot page. A pipeline run's build.xml says <completed>true</completed> once it ends.
+                    // Fail closed: if the state cannot be read, do not test a stack that may be half deployed.
+                    timeout(time: 150, unit: 'MINUTES') {
                         waitUntil(initialRecurrencePeriod: 60000) {
-                            def building = sh(returnStdout: true, script: '''
-                                curl -fsS -g "${JENKINS_URL}job/la-docker-compose-tests/lastBuild/api/json?tree=building" 2>/dev/null | grep -o '"building":[a-z]*' || echo unknown
+                            def state = sh(returnStdout: true, script: '''
+                                d="${JENKINS_HOME}/jobs/la-docker-compose-tests/builds"
+                                n=$(ls "$d" 2>/dev/null | grep -E '^[0-9]+$' | sort -n | tail -1)
+                                if [ -z "$n" ]; then echo unknown
+                                elif grep -q '<completed>true</completed>' "$d/$n/build.xml" 2>/dev/null; then echo "idle #$n"
+                                else echo "running #$n"; fi
                             ''').trim()
-                            if (building == 'unknown') { echo 'Cannot read la-docker-compose-tests status (no anonymous read?); continuing'; return true }
-                            if (building.endsWith('true')) { echo 'la-docker-compose-tests is running; waiting'; return false }
-                            return true
+                            if (state == 'unknown') { error "Cannot read la-docker-compose-tests builds under ${env.JENKINS_HOME}" }
+                            echo "la-docker-compose-tests: ${state}"
+                            return state.startsWith('idle')
                         }
                     }
                     sh 'curl -fsS -o /dev/null -w "spatial-service: %{http_code}\\n" "${SPATIAL_TEST_URL}/fields"'

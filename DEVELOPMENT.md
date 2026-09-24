@@ -129,15 +129,24 @@ discovery for MCP clients (they need to obtain the token themselves).
    `relation "layers_id_seq" does not exist`: the layers database lacks the sequence that
    `docker/postgres/init_layersdb.sql` creates and `ManageLayersService.createOrUpdateLayer` uses
    (`nextval('layers_id_seq')`). It fails the same way from the admin UI; it is a deployment bug, not an MCP one.
-8. On the LA demo stack `/tasks/capabilities` returns `{}` anonymously (spatial.ala.org.au returns 16 public
-   analyses), so `spatial_run_task` cannot pre-check inputs there; the server still validates them.
+   Cause: that layersdb had been created by Hibernate before la-docker-compose's init-databases ran, and the
+   "first run only" guard skips the schema when the database exists. Deployments created from ala-install's
+   `layersdb.sql` (2015) have it.
+8. **Task specs are not found when spatial-service runs as an executable war** (`java -jar app.war`, as the
+   Docker image does). `TasksService.getAllSpec()` lists the classpath dir `/processes/` with `java.io.File`,
+   which is empty inside a war: `/tasks/capabilities` is `{}` and `LayerCreation`, `FieldCreation` and every
+   analysis fail ("failed to find spec for: LayerCreation", then an NPE in `TasksService.create`). ala-install's
+   Tomcat runs the war exploded, so ALA is not affected. la-docker-compose now runs the war exploded
+   (living-atlases/la-docker-compose@8d2f754); the proper fix is to load `classpath*:/processes/*.json` with
+   Spring's `PathMatchingResourcePatternResolver`.
 
 What would make this safe by design, and could be proposed upstream:
 - a small JSON admin API for layers/fields (create, update, delete) documented in the OpenAPI spec, with the same
   validation as the form done server side;
 - let `@RequireAdmin` accept a bearer JWT with the admin role (run the JWT authenticator for it too), and/or
   admin by API key or a scoped service token (client credentials with an admin scope) again;
-- fix the `inputs`/`input` mismatch in the spec.
+- fix the `inputs`/`input` mismatch in the spec;
+- load the task specs from the classpath, not from the file system (finding 8).
 
 ### Why not a Grails plugin inside spatial-service?
 
