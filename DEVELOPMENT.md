@@ -135,6 +135,10 @@ discovery for MCP clients (they need to obtain the token themselves).
    The same skipped load leaves out the search functions (`search_objects_by_geometry_intersect`, `searchobjects`,
    `search_objects_by_location`), the `updateNameSearch` trigger and some tables (`obj_names`,
    `points_of_interest`…), so `/intersect` answers 500 there once a restart makes the field visible (finding 9).
+   la-docker-compose now checks for the upstream schema on every deploy and stops if it is missing, never
+   dropping or repairing it by itself (living-atlases/la-docker-compose@d9587f3); lademo's layersdb was rebuilt
+   from `layersdb.sql` on 2026-09-24. ala-install's `layers-db` role has the same first-run-only load, but runs
+   before spatial-service, so it only breaks if spatial-service reached an empty layersdb first or the load failed.
 8. **Task specs are not found when spatial-service runs as an executable war** (`java -jar app.war`, as the
    Docker image does). `TasksService.getAllSpec()` lists the classpath dir `/processes/` with `java.io.File`,
    which is empty inside a war: `/tasks/capabilities` is `{}` and `LayerCreation`, `FieldCreation` and every
