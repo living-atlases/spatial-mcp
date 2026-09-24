@@ -62,6 +62,7 @@ export async function startFakeSpatial(opts: { adminToken?: string; failTask?: s
       }
       return res.writeHead(200, { "Content-Type": "text/html" }).end(`<html><title>CAS login</title><form method="post" id="fm1"><input name="username" type="text"/><input name="password" type="password"/><input type="hidden" name="execution" value="e1s1"/><input type="hidden" name="_eventId" value="submit"/><input type="submit" name="submit" value="Login"/></form></html>`);
     }
+    if (path === "/ws/login") return res.writeHead(302, { Location: `${origin}/cas/login?service=${encodeURIComponent(origin + (url.searchParams.get("path") ?? "/ws/"))}` }).end();
     if (path === "/ws/callback") return res.writeHead(302, { Location: url.searchParams.get("target")!, "Set-Cookie": "JSESSIONID=admin-session; Path=/ws; HttpOnly" }).end();
 
     if (path.startsWith("/geoserver/")) return res.writeHead(200, { "Content-Type": "image/png" }).end(Buffer.from([137, 80, 78, 71]));
@@ -71,7 +72,7 @@ export async function startFakeSpatial(opts: { adminToken?: string; failTask?: s
     if (p.startsWith("/manageLayers") || p.startsWith("/tasks/all") || p.startsWith("/tasks/reRun")) {
       if (!isAdmin) {
         if ((req.headers["accept"] ?? "").includes("application/json")) return json(401, { error: "Forbidden, user login required!" });
-        return res.writeHead(302, { Location: `${origin}/cas/login?service=${encodeURIComponent(base.replace(/\/ws$/, "") + path + url.search)}` }).end();
+        return res.writeHead(302, { Location: `/ws/login?path=${encodeURIComponent(path + url.search)}` }).end();
       }
     }
 

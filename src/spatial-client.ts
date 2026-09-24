@@ -194,11 +194,13 @@ export class SpatialClient {
     return res;
   }
 
-  /** 401/403, or a redirect out of spatial-service (/ws), i.e. to the login page. */
+  /** 401/403, or a redirect to a login page (spatial's own /ws/login or the auth server). */
   private needsLogin(res: Response): boolean {
     if (res.status === 401 || res.status === 403) return true;
     const loc = res.status >= 300 && res.status < 400 ? res.headers.get("location") : null;
-    return !!loc && !new URL(loc, this.baseUrl).toString().startsWith(this.baseUrl + "/");
+    if (!loc) return false;
+    const to = new URL(loc, this.baseUrl);
+    return !to.toString().startsWith(this.baseUrl + "/") || /\/(login|logout|callback)\b|oidc|oauth/i.test(to.pathname);
   }
 
   private async json<T>(path: string, o: Parameters<SpatialClient["raw"]>[1] = {}): Promise<T> {
