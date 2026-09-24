@@ -109,6 +109,21 @@ To update it later: `git pull && npm ci && npm run build` in the same folder, th
 
 You can also do it one step at a time (*"just upload it"*, *"now create the field"*), exactly like in the admin pages.
 
+On spatial-service 3.1.0 a new layer answers point queries (*intersect*) only after spatial-service is restarted;
+the check in step 5 tells you so. Everything else (areas, search, map) works straight away.
+
+### What the result looks like
+
+A layer added this way on the LA demo portal: Spain's autonomous communities, from a Natural Earth shapefile
+([`test/fixtures/mcp_demo_ccaa.zip`](test/fixtures/mcp_demo_ccaa.zip)), with the accented names read correctly
+from the ISO-8859-1 DBF. It shows up in the portal like any layer added by hand:
+
+![The layer in the portal's list of layers](docs/img/layers-list.png)
+
+![The layer's page](docs/img/layer-detail.png)
+
+![The layer drawn by the portal's GeoServer](docs/img/map-geoserver.jpg)
+
 ## More things to ask
 
 - *"Which layers do we have under Area Management?"*
