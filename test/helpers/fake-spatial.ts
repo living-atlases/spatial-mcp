@@ -26,8 +26,9 @@ const layerGsp = readFileSync(join(REF, "layer.gsp"), "utf8");
 const fieldGsp = readFileSync(join(REF, "field.gsp"), "utf8");
 const page = (form: string) => `<!DOCTYPE html><html><body><div class="container">${form}</div></body></html>`;
 
-export async function startFakeSpatial(opts: { adminToken?: string; failTask?: string; formHtml?: (kind: string, html: string) => string } = {}) {
+export async function startFakeSpatial(opts: { adminToken?: string; failTask?: string; formHtml?: (kind: string, html: string) => string; bearerOnAdminPages?: boolean } = {}) {
   const adminToken = opts.adminToken ?? "admin-token";
+  const login = { username: "admin@example.org", password: "s3cret-pw" };
   const state: FakeState = { uploads: new Map(), layers: new Map(), fields: new Map(), tasks: new Map(), posts: [], requests: [] };
   let nextTask = 1;
   let nextLayer = 9001;
@@ -44,7 +45,24 @@ export async function startFakeSpatial(opts: { adminToken?: string; failTask?: s
     state.requests.push(`${req.method} ${path}`);
     const json = (code: number, body: unknown) => res.writeHead(code, { "Content-Type": "application/json" }).end(JSON.stringify(body));
     const redirect = (to: string) => res.writeHead(302, { Location: `${base}${to}` }).end();
-    const isAdmin = req.headers["authorization"] === `Bearer ${adminToken}`;
+    const bearer = req.headers["authorization"] === `Bearer ${adminToken}`;
+    const session = /(^|;\s*)JSESSIONID=admin-session(;|$)/.test(req.headers["cookie"] ?? "");
+    // Like spatial-service 3.x: @RequireAdmin pages only see the web session; bearer tokens count elsewhere.
+    const adminPage = path.startsWith("/ws/manageLayers") || path.startsWith("/ws/tasks/all") || path.startsWith("/ws/tasks/reRun");
+    const isAdmin = session || (bearer && (!adminPage || opts.bearerOnAdminPages !== false));
+
+    // ---- a CAS-like login: /cas/login form -> /ws/callback sets the session cookie ----
+    if (path === "/cas/login") {
+      const service = url.searchParams.get("service") ?? `${base}/`;
+      if (req.method === "POST") {
+        const f = new URLSearchParams((await readBody(req)).toString());
+        if (f.get("execution") === "e1s1" && f.get("_eventId") === "submit" && f.get("username") === login.username && f.get("password") === login.password) {
+          return res.writeHead(302, { Location: `${base}/callback?ticket=ST-1&target=${encodeURIComponent(service)}` }).end();
+        }
+      }
+      return res.writeHead(200, { "Content-Type": "text/html" }).end(`<html><title>CAS login</title><form method="post" id="fm1"><input name="username" type="text"/><input name="password" type="password"/><input type="hidden" name="execution" value="e1s1"/><input type="hidden" name="_eventId" value="submit"/><input type="submit" name="submit" value="Login"/></form></html>`);
+    }
+    if (path === "/ws/callback") return res.writeHead(302, { Location: url.searchParams.get("target")!, "Set-Cookie": "JSESSIONID=admin-session; Path=/ws; HttpOnly" }).end();
 
     if (path.startsWith("/geoserver/")) return res.writeHead(200, { "Content-Type": "image/png" }).end(Buffer.from([137, 80, 78, 71]));
     if (!path.startsWith("/ws/")) return res.writeHead(404).end();
@@ -53,7 +71,7 @@ export async function startFakeSpatial(opts: { adminToken?: string; failTask?: s
     if (p.startsWith("/manageLayers") || p.startsWith("/tasks/all") || p.startsWith("/tasks/reRun")) {
       if (!isAdmin) {
         if ((req.headers["accept"] ?? "").includes("application/json")) return json(401, { error: "Forbidden, user login required!" });
-        return res.writeHead(302, { Location: "https://auth.example/cas/login?service=x" }).end();
+        return res.writeHead(302, { Location: `${origin}/cas/login?service=${encodeURIComponent(base.replace(/\/ws$/, "") + path + url.search)}` }).end();
       }
     }
 
@@ -91,6 +109,7 @@ export async function startFakeSpatial(opts: { adminToken?: string; failTask?: s
     if (p === "/shape/upload/wkt" && req.method === "POST") return json(200, { id: 777 });
 
     // ---- admin UI (ManageLayersController) ----
+    if (p === "/manageLayers/layers") return res.writeHead(200, { "Content-Type": "text/html" }).end(`<html><body>${[...state.layers.values()].map((l) => `<tr><td>${l["name"]}</td></tr>`).join("")}</body></html>`);
     if (p === "/manageLayers/layers.json") return json(200, { layers: [...state.layers.values()] });
     if (p === "/manageLayers/uploads.json") return json(200, { files: [...state.uploads.keys()] });
     if (p === "/manageLayers/upload" && req.method === "POST") {
@@ -164,8 +183,9 @@ export async function startFakeSpatial(opts: { adminToken?: string; failTask?: s
   });
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
   const addr = server.address() as { port: number };
-  const base = `http://127.0.0.1:${addr.port}/ws`;
-  return { url: base, geoserver: `http://127.0.0.1:${addr.port}/geoserver`, adminToken, state, close: () => new Promise<void>((r) => server.close(() => r())) };
+  const origin = `http://127.0.0.1:${addr.port}`;
+  const base = `${origin}/ws`;
+  return { url: base, geoserver: `${origin}/geoserver`, adminToken, login, state, close: () => new Promise<void>((r) => { server.close(() => r()); server.closeAllConnections(); }) };
 }
 
 async function readBody(req: IncomingMessage): Promise<Buffer> {

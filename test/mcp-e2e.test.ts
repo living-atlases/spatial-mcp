@@ -10,6 +10,7 @@ import { staticToken } from "../src/auth.ts";
 import { startHttp } from "../src/http.ts";
 import { createServer } from "../src/server.ts";
 import { SpatialClient } from "../src/spatial-client.ts";
+import { WebSession } from "../src/web-session.ts";
 import { startFakeSpatial } from "./helpers/fake-spatial.ts";
 import { shapefileZip } from "./helpers/shapefile-fixture.ts";
 
@@ -26,10 +27,11 @@ before(async () => {
 });
 after(() => fake.close());
 
-async function connect(opts: { token?: string; readonly?: boolean; fakeServer?: Fake } = {}) {
+async function connect(opts: { token?: string; readonly?: boolean; fakeServer?: Fake; login?: { username: string; password: string } } = {}) {
   const f = opts.fakeServer ?? fake;
-  const client = new SpatialClient(f.url, { auth: opts.token ? staticToken(opts.token) : undefined, apiKey: "service-key" });
-  const server = createServer({ client, config: { readonly: !!opts.readonly, geoserverUrl: f.geoserver, pollWaitMs: 2000 }, secrets: [opts.token], pollEveryMs: 10 });
+  const session = opts.login ? new WebSession(opts.login.username, opts.login.password) : undefined;
+  const client = new SpatialClient(f.url, { auth: opts.token ? staticToken(opts.token) : undefined, apiKey: "service-key", session });
+  const server = createServer({ client, config: { readonly: !!opts.readonly, geoserverUrl: f.geoserver, pollWaitMs: 2000 }, secrets: [opts.token, opts.login?.password], pollEveryMs: 10 });
   const [a, b] = InMemoryTransport.createLinkedPair();
   const mcp = new Client({ name: "test", version: "0" });
   await Promise.all([server.connect(a), mcp.connect(b)]);
@@ -194,6 +196,28 @@ test("tasks: run an analysis with a spec check, then poll it", async () => {
   assert.equal((await c.call("spatial_task_status", { id })).json.verdict, "running");
   assert.equal((await c.call("spatial_task_status", { id })).json.verdict, "success");
   await c.close();
+});
+
+test("spatial-service 3.x admin pages ignore bearer tokens: log in like a browser (CAS form, session cookie)", async () => {
+  const strict = await startFakeSpatial({ bearerOnAdminPages: false });
+  const tokenOnly = await connect({ token: strict.adminToken, fakeServer: strict });
+  assert.match((await tokenOnly.call("spatial_list_uploads")).text, /401|login/);
+  await tokenOnly.close();
+
+  const c = await connect({ login: strict.login, fakeServer: strict });
+  const r = await c.call("spatial_add_layer", { path: zipPath, name: "mcp_poc_session", sname: "NAME", dryRun: false, confirm: true });
+  assert.equal(r.isError, false, r.text);
+  assert.deepEqual(r.json.fieldIds, ["cl9001"]);
+  assert.equal(strict.state.requests.filter((x) => x === "POST /cas/login").length, 1, "logs in once and reuses the session");
+  await c.close();
+
+  const wrong = await connect({ login: { username: strict.login.username, password: "nope-wrong" }, fakeServer: strict });
+  const w = await wrong.call("spatial_list_uploads");
+  assert.equal(w.isError, true);
+  assert.match(w.text, /refused \(wrong username or password\?\)/);
+  assert.ok(!w.text.includes("nope-wrong"));
+  await wrong.close();
+  await strict.close();
 });
 
 test("secrets never reach the model", async () => {

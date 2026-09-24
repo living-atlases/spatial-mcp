@@ -2,7 +2,8 @@
  * Integration tests against a real spatial-service (the LA demo stack deployed by the Jenkins job
  * la-docker-compose-tests). Configure with:
  *   SPATIAL_TEST_URL=https://spatial.l-a.site/ws
- *   admin (for the write tests): SPATIAL_TOKEN, or SPATIAL_OIDC_ISSUER + SPATIAL_OIDC_CLIENT_ID/_SECRET + SPATIAL_OIDC_USERNAME/_PASSWORD
+ *   admin (for the write tests): SPATIAL_USERNAME + SPATIAL_PASSWORD of a portal admin (the admin pages need a
+ *   browser-like login session); optionally SPATIAL_OIDC_* for a bearer token on /tasks/create
  *
  * The write test creates a layer named mcp_poc_<timestamp> from a 3-polygon WGS84 shapefile, waits for
  * LayerCreation and FieldCreation (not for the tabulation chain), checks it the way the wiki's step 8 does,
@@ -19,13 +20,13 @@ import { loadConfig, secretsOf } from "../../src/config.ts";
 import { parseForm, signature } from "../../src/form-contract.ts";
 import { createServer } from "../../src/server.ts";
 import { SpatialClient } from "../../src/spatial-client.ts";
-import { authFor } from "../../src/stdio.ts";
+import { clientFor } from "../../src/stdio.ts";
 import { referenceForms, REFERENCE_VERSION } from "../../src/workflows.ts";
 import { shapefileZip } from "../helpers/shapefile-fixture.ts";
 
 const URL_ = process.env["SPATIAL_TEST_URL"];
 const config = URL_ ? loadConfig(["--spatial", URL_]) : undefined;
-const hasAdmin = !!(config?.token || config?.oidc?.username);
+const hasAdmin = !!config?.login;
 const TASK_TIMEOUT = Number(process.env["SPATIAL_TEST_TASK_TIMEOUT_MS"] ?? 15 * 60_000);
 
 describe("spatial-service (real)", { skip: !URL_ && "SPATIAL_TEST_URL not set" }, () => {
@@ -34,7 +35,7 @@ describe("spatial-service (real)", { skip: !URL_ && "SPATIAL_TEST_URL not set" }
   let mcp: Client;
 
   before(async () => {
-    client = new SpatialClient(config!.url, { auth: authFor(config!), apiKey: config!.apiKey });
+    client = clientFor(config!);
     const server = createServer({ client, config: { ...config!, pollWaitMs: TASK_TIMEOUT }, secrets: secretsOf(config!), pollEveryMs: 10_000 });
     const [a, b] = InMemoryTransport.createLinkedPair();
     mcp = new Client({ name: "integration", version: "0" });
@@ -72,7 +73,7 @@ describe("spatial-service (real)", { skip: !URL_ && "SPATIAL_TEST_URL not set" }
     await assert.rejects(anon.manageLayers(), /401|403|login/);
   });
 
-  describe("as admin", { skip: !hasAdmin && "no admin credentials (SPATIAL_TOKEN or SPATIAL_OIDC_*)" }, () => {
+  describe("as admin", { skip: !hasAdmin && "no admin account (SPATIAL_USERNAME/SPATIAL_PASSWORD)" }, () => {
     test("admin access works", async () => {
       const h = await call("spatial_health");
       assert.equal(h.json.admin, "ok", h.text);

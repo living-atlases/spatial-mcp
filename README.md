@@ -40,12 +40,9 @@ the file, shows you what it is going to do, and only does it after you say yes.
 
 You need:
 1. **Node.js 20 or later** on the computer where the assistant runs.
-2. **An admin account** on the portal (a user with the admin role, e.g. `ROLE_ADMIN`). Since spatial-service 3
-   the admin pages need a logged-in admin: an API key is not enough. Without an account you can still use the
-   read-only tools (list layers, fields, intersect…).
-3. The **OIDC client** (id and secret) your portal uses for spatial, from your inventory
-   (`spatial_client_id` / `spatial_client_secret` in the la-toolkit / ala-install passwords file), and your
-   auth server address (e.g. `https://auth.l-a.site/cas/oidc`).
+2. **An admin account** on the portal: the same username (e-mail) and password you use to log in to the
+   spatial admin pages, with the admin role (e.g. `ROLE_ADMIN`). The assistant logs in with it the way your
+   browser does. Without an account you can still use the read-only tools (list layers, fields, intersect…).
 
 ## Install
 
@@ -55,10 +52,10 @@ cd spatial-mcp
 npm ci
 ```
 
-Add it to Claude Code (one line; adapt the URLs, the client and your account):
+Add it to Claude Code (one line; adapt the address and your account):
 
 ```bash
-claude mcp add spatial -e SPATIAL_OIDC_ISSUER=https://auth.l-a.site/cas/oidc -e SPATIAL_OIDC_CLIENT_ID=your-client-id -e SPATIAL_OIDC_CLIENT_SECRET=your-client-secret -e SPATIAL_OIDC_USERNAME=you@example.org -e SPATIAL_OIDC_PASSWORD=your-password -e SPATIAL_ALLOWED_DIRS=/home/you/layers -- npx tsx /path/to/spatial-mcp/src/stdio.ts --spatial https://spatial.l-a.site/ws
+claude mcp add spatial -e SPATIAL_USERNAME=you@example.org -e SPATIAL_PASSWORD=your-password -e SPATIAL_ALLOWED_DIRS=/home/you/layers -- npx tsx /path/to/spatial-mcp/src/stdio.ts --spatial https://spatial.l-a.site/ws
 ```
 
 For Claude Desktop, add the same to `claude_desktop_config.json`:
@@ -70,11 +67,8 @@ For Claude Desktop, add the same to `claude_desktop_config.json`:
       "command": "npx",
       "args": ["tsx", "/path/to/spatial-mcp/src/stdio.ts", "--spatial", "https://spatial.l-a.site/ws"],
       "env": {
-        "SPATIAL_OIDC_ISSUER": "https://auth.l-a.site/cas/oidc",
-        "SPATIAL_OIDC_CLIENT_ID": "your-client-id",
-        "SPATIAL_OIDC_CLIENT_SECRET": "your-client-secret",
-        "SPATIAL_OIDC_USERNAME": "you@example.org",
-        "SPATIAL_OIDC_PASSWORD": "your-password",
+        "SPATIAL_USERNAME": "you@example.org",
+        "SPATIAL_PASSWORD": "your-password",
         "SPATIAL_ALLOWED_DIRS": "/home/you/layers"
       }
     }
@@ -85,8 +79,7 @@ For Claude Desktop, add the same to `claude_desktop_config.json`:
 | Setting | What it is |
 |---|---|
 | `--spatial` (or `SPATIAL_URL`) | Your spatial-service address, ending in `/ws` |
-| `SPATIAL_OIDC_*` | Your admin login (see *Before you start*) |
-| `SPATIAL_TOKEN` | Instead of the above: an access token you already have |
+| `SPATIAL_USERNAME`, `SPATIAL_PASSWORD` | Your admin account (see *Before you start*) |
 | `SPATIAL_ALLOWED_DIRS` | Folders the assistant may upload zips from (recommended) |
 | `SPATIAL_READONLY=1` | Look, don't touch: every change is refused (previews still work) |
 
@@ -136,7 +129,9 @@ It is still a proof of concept: use a test portal, and keep an eye on what it do
 
 | Message | What to do |
 |---|---|
-| *needs a logged-in user with the admin role* (401/403) | Check the `SPATIAL_OIDC_*` settings, and that your account has the admin role in the portal. |
+| *login … was refused* | Wrong username or password: try them in the browser. |
+| *needs a logged-in user with the admin role* (401/403) | Check `SPATIAL_USERNAME`/`SPATIAL_PASSWORD`, and that your account has the admin role in the portal. |
+| *login did not reach spatial-service* | Your portal's login page is not the usual CAS one (e.g. a different identity provider). Please open an issue. |
 | *not in WGS84* | Reproject the layer to EPSG:4326 (QGIS *Export > Save as*, or `ogr2ogr -t_srs EPSG:4326`). |
 | *"sname" is needed* | Tell it which DBF column holds the name of each area (the check in step 2 suggests one). |
 | *Refused by the form contract* | What you asked for doesn't fit the admin form (too long, not an allowed value, or it can't be changed). Change it, or do it by hand. |
@@ -145,8 +140,9 @@ It is still a proof of concept: use a test portal, and keep an eye on what it do
 
 ## Using it without installing anything (for portal operators)
 
-The same server can run next to spatial-service, so admins connect to it by URL instead of installing it. See
-[DEVELOPMENT.md](DEVELOPMENT.md#remote-http-transport).
+The same server can run next to spatial-service, so admins connect to it by URL instead of installing it. For
+now that mode only covers reads, tasks and areas: spatial-service 3.1.0 admin pages need a browser login, which
+the remote mode does not have. See [DEVELOPMENT.md](DEVELOPMENT.md#remote-http-transport).
 
 ## More
 

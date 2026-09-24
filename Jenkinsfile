@@ -66,10 +66,11 @@ pipeline {
                         export SPATIAL_OIDC_ISSUER="${OIDC_ISSUER}"
                         export SPATIAL_OIDC_CLIENT_ID="$(val spatial_client_id)"
                         export SPATIAL_OIDC_CLIENT_SECRET="$(val spatial_client_secret)"
-                        export SPATIAL_OIDC_USERNAME="$(val cas_first_admin_email)"
-                        export SPATIAL_OIDC_PASSWORD="$(sed -nE 's/.*random password:[[:space:]]*([^[:space:]]+).*/\\1/p' "$PW" | head -1)"
+                        export SPATIAL_USERNAME="$(val cas_first_admin_email)"
+                        export SPATIAL_PASSWORD="$(sed -nE 's/.*random password:[[:space:]]*([^[:space:]]+).*/\\1/p' "$PW" | head -1)"
+                        export SPATIAL_OIDC_USERNAME="$SPATIAL_USERNAME" SPATIAL_OIDC_PASSWORD="$SPATIAL_PASSWORD"
                         export SPATIAL_API_KEY="$(val spatial_service_service_key)"
-                        echo "admin credentials: from $PW (user $SPATIAL_OIDC_USERNAME)"
+                        echo "admin credentials: from $PW (user $SPATIAL_USERNAME)"
                     else
                         echo "no admin credentials: only public/anonymous integration tests run"
                     fi

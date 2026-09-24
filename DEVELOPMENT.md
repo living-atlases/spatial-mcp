@@ -83,7 +83,8 @@ ALA support articles ([Tools](https://support.ala.org.au/support/solutions/artic
 |---|---|
 | `SPATIAL_URL` / `--spatial` | spatial-service base URL including `/ws` |
 | `SPATIAL_GEOSERVER_URL` / `--geoserver` | GeoServer base (default `<host>/geoserver`) |
-| `SPATIAL_TOKEN` | OIDC access token of an admin user |
+| `SPATIAL_USERNAME`, `SPATIAL_PASSWORD` | admin account: browser-like login (OIDC → CAS form → session cookie) for the admin pages (falls back to `SPATIAL_OIDC_USERNAME`/`_PASSWORD`) |
+| `SPATIAL_TOKEN` | OIDC access token (honoured only by `@RequireApiKey` actions, e.g. `/tasks/create`) |
 | `SPATIAL_OIDC_ISSUER` or `SPATIAL_OIDC_TOKEN_URL`, `SPATIAL_OIDC_CLIENT_ID`, `SPATIAL_OIDC_CLIENT_SECRET`, `SPATIAL_OIDC_USERNAME`, `SPATIAL_OIDC_PASSWORD`, `SPATIAL_OIDC_SCOPE` | password grant, token cached and renewed (discovery finds the token endpoint) |
 | `SPATIAL_API_KEY` | serviceKey, only for `/tasks/create` and `/tasks/cancel` without a user |
 | `SPATIAL_READONLY=1` / `--readonly` | refuse every write |
@@ -99,15 +100,22 @@ docker build -t spatial-mcp . && docker run -p 3920:3920 -e SPATIAL_URL=https://
 
 `src/http.ts` serves Streamable HTTP at `/mcp` (stateless, JSON responses) and `/health`. Each request gets a fresh
 MCP server bound to the caller's own `Authorization: Bearer <token>`, which is forwarded to spatial-service and never
-stored; without a token only public tools work. The idea is to run it next to spatial-service behind the same proxy
+stored; without a token only public tools work. **Limitation (finding 1):** spatial-service 3.1.0 admin pages ignore
+bearer tokens, so over HTTP the layer administration tools answer 401 until spatial-service accepts JWTs there;
+reads, tasks and areas work. The idea is to run it next to spatial-service behind the same proxy
 (e.g. an optional service in la-docker-compose), so admins connect by URL and install nothing. Not done yet: OAuth
 discovery for MCP clients (they need to obtain the token themselves).
 
 ## Findings about spatial-service 3.1.0
 
-1. **An API key no longer grants admin.** In 2.x `LoginInterceptor` let a valid API key through `@RequireAdmin`;
-   in 3.x it needs `authService.getUserId()` plus the admin role, so automation needs a user token (OIDC). The
-   serviceKey is only honoured by `@RequireApiKey` (`/tasks/create`, `/tasks/cancel`).
+1. **Admin pages need a browser session.** In 2.x `LoginInterceptor` let a valid API key through `@RequireAdmin`.
+   In 3.x it needs `authService.getUserId()` plus the admin role, and `authService` only sees the pac4j profile of
+   the web session: a bearer JWT is turned into a profile only by ala-ws-security's `AlaSecurityInterceptor`, which
+   runs only on `@RequireApiKey` actions (`/tasks/create`, `/tasks/cancel`). Verified on the LA demo: a valid admin
+   token from the CAS password grant gets `401 user login required` on `/manageLayers/*`. So `src/web-session.ts`
+   logs in like a browser (spatial → OIDC authorize → CAS login form → callback → `JSESSIONID`) and retries once
+   when a request is refused. Consequence: the HTTP transport, which only has the caller's token, cannot use the
+   admin pages.
 2. **Layer administration has no API.** `/manageLayers/*` is not in the OpenAPI spec; it answers with 302
    redirects to HTML pages, and ids have to be read from the `Location` header or from `…/layer/<id>.json`.
 3. **The form's limits are only in the HTML.** `maxlength`s, select options and read-only fields are not checked
@@ -121,7 +129,8 @@ discovery for MCP clients (they need to obtain the token themselves).
 What would make this safe by design, and could be proposed upstream:
 - a small JSON admin API for layers/fields (create, update, delete) documented in the OpenAPI spec, with the same
   validation as the form done server side;
-- admin by API key or by a scoped service token (client credentials with an admin scope) again;
+- let `@RequireAdmin` accept a bearer JWT with the admin role (run the JWT authenticator for it too), and/or
+  admin by API key or a scoped service token (client credentials with an admin scope) again;
 - fix the `inputs`/`input` mismatch in the spec.
 
 ### Why not a Grails plugin inside spatial-service?

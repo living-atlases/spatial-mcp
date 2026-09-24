@@ -4,6 +4,8 @@
  *   --spatial <url> | SPATIAL_URL        spatial-service base URL including /ws (default https://spatial.l-a.site/ws)
  *   --geoserver <url> | SPATIAL_GEOSERVER_URL   GeoServer base (default: <host>/geoserver)
  *   SPATIAL_READONLY=1                    refuse every write
+ *   SPATIAL_USERNAME / SPATIAL_PASSWORD   portal admin account: logs in to the admin pages like a browser
+ *                                         (falls back to SPATIAL_OIDC_USERNAME / _PASSWORD)
  *   SPATIAL_TOKEN                         a Bearer JWT (OIDC access token of a user with the admin role)
  *   SPATIAL_OIDC_ISSUER                   e.g. https://auth.l-a.site/cas/oidc (discovery is used to find the token endpoint)
  *   SPATIAL_OIDC_TOKEN_URL                token endpoint (overrides discovery)
@@ -32,6 +34,8 @@ export interface Config {
   token?: string;
   oidc?: OidcConfig;
   apiKey?: string;
+  /** Admin account for the browser-like session the admin pages need. */
+  login?: { username: string; password: string };
   pollWaitMs: number;
 }
 
@@ -62,9 +66,16 @@ export function loadConfig(argv: string[] = process.argv.slice(2), env: NodeJS.P
     token: env["SPATIAL_TOKEN"] || undefined,
     oidc,
     apiKey: env["SPATIAL_API_KEY"] || undefined,
+    login: loginFrom(env),
     pollWaitMs: Number(env["SPATIAL_POLL_WAIT_MS"] ?? 20000),
   };
 }
 
+function loginFrom(env: NodeJS.ProcessEnv) {
+  const username = env["SPATIAL_USERNAME"] || env["SPATIAL_OIDC_USERNAME"];
+  const password = env["SPATIAL_PASSWORD"] || env["SPATIAL_OIDC_PASSWORD"];
+  return username && password ? { username, password } : undefined;
+}
+
 /** Values that must never reach the model. */
-export const secretsOf = (c: Config) => [c.token, c.apiKey, c.oidc?.clientSecret, c.oidc?.password];
+export const secretsOf = (c: Config) => [c.token, c.apiKey, c.oidc?.clientSecret, c.oidc?.password, c.login?.password];

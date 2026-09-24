@@ -2,6 +2,7 @@ import createClient from "openapi-fetch";
 import type { paths } from "./api.gen.ts";
 import type { Auth } from "./auth.ts";
 import { noAuth } from "./auth.ts";
+import type { WebSession } from "./web-session.ts";
 
 export class SpatialError extends Error {
   constructor(
@@ -21,6 +22,8 @@ export interface ClientOptions {
   apiKey?: string;
   fetch?: FetchLike;
   timeoutMs?: number;
+  /** Browser-like login session for the admin pages (@RequireAdmin ignores bearer tokens in 3.x). */
+  session?: WebSession;
 }
 
 /**
@@ -165,15 +168,35 @@ export class SpatialClient {
   // ---------- plumbing ----------
 
   async raw(path: string, o: { method?: string; json?: unknown; body?: BodyInit; user?: boolean; apiKey?: boolean; accept?: string } = {}): Promise<Response> {
-    const headers: Record<string, string> = { Accept: o.accept ?? "application/json" };
-    if (o.user) Object.assign(headers, await this.auth.headers());
-    if (o.apiKey && this.opts.apiKey && !headers["Authorization"]) headers["apiKey"] = this.opts.apiKey;
-    let body = o.body;
-    if (o.json !== undefined) {
-      headers["Content-Type"] = "application/json";
-      body = JSON.stringify(o.json);
+    const url = this.baseUrl + path;
+    const send = async () => {
+      const headers: Record<string, string> = { Accept: o.accept ?? "application/json" };
+      if (o.user) Object.assign(headers, await this.auth.headers());
+      if (o.apiKey && this.opts.apiKey && !headers["Authorization"]) headers["apiKey"] = this.opts.apiKey;
+      const cookie = o.user ? this.opts.session?.cookieFor(url) : undefined;
+      if (cookie) headers["Cookie"] = cookie;
+      let body = o.body;
+      if (o.json !== undefined) {
+        headers["Content-Type"] = "application/json";
+        body = JSON.stringify(o.json);
+      }
+      const res = await this.fetchImpl(url, { method: o.method ?? "GET", headers, body, redirect: "manual", signal: AbortSignal.timeout(this.timeoutMs) });
+      if (o.user) this.opts.session?.store(url, res);
+      return res;
+    };
+    const res = await send();
+    if (o.user && this.opts.session && this.needsLogin(res)) {
+      await this.opts.session.login(`${this.baseUrl}/manageLayers/layers`);
+      return send();
     }
-    return this.fetchImpl(this.baseUrl + path, { method: o.method ?? "GET", headers, body, redirect: "manual", signal: AbortSignal.timeout(this.timeoutMs) });
+    return res;
+  }
+
+  /** 401/403, or a redirect away from spatial-service (to the login page). */
+  private needsLogin(res: Response): boolean {
+    if (res.status === 401 || res.status === 403) return true;
+    const loc = res.status >= 300 && res.status < 400 ? res.headers.get("location") : null;
+    return !!loc && new URL(loc, this.baseUrl).origin !== new URL(this.baseUrl).origin;
   }
 
   private async json<T>(path: string, o: Parameters<SpatialClient["raw"]>[1] = {}): Promise<T> {
