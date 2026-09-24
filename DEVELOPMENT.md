@@ -132,6 +132,9 @@ discovery for MCP clients (they need to obtain the token themselves).
    Cause: that layersdb had been created by Hibernate before la-docker-compose's init-databases ran, and the
    "first run only" guard skips the schema when the database exists. Deployments created from ala-install's
    `layersdb.sql` (2015) have it.
+   The same skipped load leaves out the search functions (`search_objects_by_geometry_intersect`, `searchobjects`,
+   `search_objects_by_location`), the `updateNameSearch` trigger and some tables (`obj_names`,
+   `points_of_interest`…), so `/intersect` answers 500 there once a restart makes the field visible (finding 9).
 8. **Task specs are not found when spatial-service runs as an executable war** (`java -jar app.war`, as the
    Docker image does). `TasksService.getAllSpec()` lists the classpath dir `/processes/` with `java.io.File`,
    which is empty inside a war: `/tasks/capabilities` is `{}` and `LayerCreation`, `FieldCreation` and every
