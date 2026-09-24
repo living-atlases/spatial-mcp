@@ -205,7 +205,15 @@ export class Workflows {
         await run("object details (/object/<pid>)", async () => ((await this.client.object(firstPid!)).pid ? true : false));
         await run("object KML (/shapes/kml/<pid>)", async () => ((await this.client.shapeKml(firstPid!)).includes("<kml") ? true : false));
       }
-      if (point) await run(`intersect at ${point.lat},${point.lng}`, async () => this.client.intersect(fieldId, point.lat, point.lng));
+      // spatial-service 3.1.0 caches the intersectable fields (@Cacheable getIntersectionFiles) and
+      // /intersect/reloadconfig is a no-op, so a new field answers [] until spatial-service restarts.
+      if (point)
+        await run(`intersect at ${point.lat},${point.lng}`, async () => {
+          const r = (await this.client.intersect(fieldId, point.lat, point.lng)) as Array<{ value?: string }>;
+          if (!r.length) throw new Error("no answer for this field: spatial-service 3.1.0 only sees fields added since its last restart (reloadconfig does not refresh it); restart spatial-service");
+          if (!r.some((x) => x.value)) throw new Error("the point is not inside any area of this field (try a point inside one of its areas)");
+          return r;
+        });
     }
     if (layer?.name) {
       const wms = `${this.geoserverUrl}/ALA/wms?service=WMS&version=1.1.0&request=GetMap&layers=ALA:${encodeURIComponent(String(layer.name))}&styles=&bbox=-180,-90,180,90&width=256&height=128&srs=EPSG:4326&format=image/png`;

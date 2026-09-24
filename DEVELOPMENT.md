@@ -139,6 +139,13 @@ discovery for MCP clients (they need to obtain the token themselves).
    Tomcat runs the war exploded, so ALA is not affected. la-docker-compose now runs the war exploded
    (living-atlases/la-docker-compose@8d2f754); the proper fix is to load `classpath*:/processes/*.json` with
    Spring's `PathMatchingResourcePatternResolver`.
+9. **A new field does not answer point intersects until spatial-service restarts.** `LayerService.getIntersectionFiles()`
+   is `@Cacheable` and nothing evicts it, and `/intersect/reloadconfig` (`LayerIntersectService.reload()`) is an empty
+   `//TODO` in 3.1.0. So `/intersect/<new field>/<lat>/<lng>` returns `[]` until a restart; objects, KML, search and
+   WMS work at once. `spatial_verify_layer` reports it with that hint. Upstream fix: evict the cache in `reload()`.
+10. **The Docker image has no GDAL** (`gdal.dir: /usr/bin/`, but no `ogrinfo`/`gdal_translate`). Shapefile layers
+   still work (GDAL only adds a spatial index), but grid layers (BIL/GeoTIFF), StandardizeLayers, Classification and
+   Envelope need it. ala-install installs `gdal-bin`.
 
 What would make this safe by design, and could be proposed upstream:
 - a small JSON admin API for layers/fields (create, update, delete) documented in the OpenAPI spec, with the same
@@ -146,7 +153,8 @@ What would make this safe by design, and could be proposed upstream:
 - let `@RequireAdmin` accept a bearer JWT with the admin role (run the JWT authenticator for it too), and/or
   admin by API key or a scoped service token (client credentials with an admin scope) again;
 - fix the `inputs`/`input` mismatch in the spec;
-- load the task specs from the classpath, not from the file system (finding 8).
+- load the task specs from the classpath, not from the file system (finding 8);
+- make `/intersect/reloadconfig` refresh the intersectable fields (finding 9).
 
 ### Why not a Grails plugin inside spatial-service?
 
