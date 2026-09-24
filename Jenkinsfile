@@ -13,6 +13,13 @@ pipeline {
         timeout(time: 90, unit: 'MINUTES')
     }
     triggers { cron('H 5 * * *') }
+    environment {
+        // params.* exist on the first build too; as env vars only once the job knows its parameters.
+        SPATIAL_TEST_URL = "${params.SPATIAL_TEST_URL ?: 'https://spatial.l-a.site/ws'}"
+        OIDC_ISSUER = "${params.OIDC_ISSUER ?: 'https://auth.l-a.site/cas/oidc'}"
+        INVENTORY_DIR = "${params.INVENTORY_DIR ?: '${HOME}/ala-install-docker-tests/lademo/lademo-inventories'}"
+        RUN_WRITE_TESTS = "${params.RUN_WRITE_TESTS == null ? true : params.RUN_WRITE_TESTS}"
+    }
     parameters {
         string(name: 'SPATIAL_TEST_URL', defaultValue: 'https://spatial.l-a.site/ws', description: 'spatial-service under test (base URL including /ws)')
         string(name: 'OIDC_ISSUER', defaultValue: 'https://auth.l-a.site/cas/oidc', description: 'OIDC issuer of that stack')
