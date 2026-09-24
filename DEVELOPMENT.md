@@ -27,6 +27,82 @@ MCP client ──stdio or Streamable HTTP──▶ spatial-mcp ──HTTP──�
   `scripts/render-gsp.mjs` (a tiny renderer for the subset those views use). Used for dry-run previews, for the
   fake spatial-service in tests, and to detect drift.
 
+### The form contract (why it does not break the admin UI)
+
+Adding and editing layers goes through `/manageLayers/*`, the admin web pages. They are not part of the
+documented API, and the server does not enforce what the HTML form enforces: `maxlength`s (`requestedId` 15,
+`scale` 20, names 150…), select options (`type`, `domain`, `licence_level`, and `sname`, which must be a column of
+the uploaded DBF) and fields that become read-only once a layer exists (`name`, `type`, `domain`, environmental
+units). Something the form cannot express could leave a layer the UI cannot show or edit.
+
+Every write therefore reads the **live form** and sends exactly what a browser would send with it, the form's own
+defaults included:
+
+| Change in a new spatial-service version | Effect |
+|---|---|
+| field added, `maxlength`/options/defaults changed | picked up automatically (the contract is read live) |
+| field renamed/removed, new required field | refused, naming the field; nothing is sent (fail closed) |
+| validation only in JavaScript (none in 3.1.0) | not seen; the drift test against `reference/3.1.0` catches form changes |
+| redirects replaced by JSON | the client reads both; the integration test would catch the rest |
+
+Because it posts the same fields as the form, what it creates looks the same in the admin UI as a layer created
+by hand; the integration test checks the admin pages render it. `spatial_form_contract` shows the live contract
+and its drift against 3.1.0.
+
+### Tool reference
+
+| Tool | Endpoint(s) | Kind |
+|---|---|---|
+| `spatial_health` | `/openapi/openapi.json`, `/layers`, `/manageLayers/layers.json` | read |
+| `spatial_list_layers`, `spatial_get_layer` | `/layers`, `/layers/search`, `/layer/{id}` | read |
+| `spatial_list_fields`, `spatial_get_field`, `spatial_list_objects` | `/fields`, `/fields/search`, `/field/{id}`, `/objects/{fid}` | read |
+| `spatial_search_gazetteer`, `spatial_intersect` | `/search`, `/intersect/{ids}/{lat}/{lng}` | read |
+| `spatial_capabilities` | `/tasks/capabilities` | read |
+| `inspect_layer_zip` | local | read |
+| `spatial_upload`, `spatial_create_layer`, `spatial_create_field`, `spatial_add_layer` | `/manageLayers/upload`, `/manageLayers/layer/{id}`, `/manageLayers/field/{id}`, `/tasks/status/{id}`, `/intersect/reloadconfig` | write, dry run by default |
+| `spatial_verify_layer` | `/layers`, `/fields`, `/objects`, `/object`, `/shapes/kml`, `/intersect`, GeoServer WMS, admin page | read |
+| `spatial_update_layer`, `spatial_update_field` | `/manageLayers/layer|field/{id}` | write, dry run by default |
+| `spatial_form_contract`, `spatial_layer_admin`, `spatial_list_uploads` | `/manageLayers/*` | read (admin) |
+| `spatial_reload_intersect_config` | `/intersect/reloadconfig` | write, confirm |
+| `spatial_delete` | `/manageLayers/deleteLayer|deleteUpload/{id}` | destructive, confirm |
+| `spatial_list_tasks`, `spatial_task_status` | `/tasks/all`, `/tasks/status/{id}` | read |
+| `spatial_run_task` | `/tasks/create` (JSON body) | write, dry run by default |
+| `spatial_cancel_task`, `spatial_rerun_task` | `/tasks/cancel/{id}`, `/tasks/reRun/{id}` | write, confirm |
+| `spatial_compare_remote`, `spatial_import_from_remote` | `/manageLayers/remote`, `importLayer`, `importField` | read / write |
+| `spatial_create_area`, `spatial_delete_area` | `/shape/upload/wkt|geojson`, `DELETE /shape/upload/{pid}` | write |
+
+Sources for the operations: the LA wiki [Adding Layers](https://github.com/AtlasOfLivingAustralia/documentation/wiki/Adding-Layers)
+and [Configuring the Spatial Portal](https://github.com/AtlasOfLivingAustralia/documentation/wiki/Configuring-the-Spatial-Portal),
+ALA support articles ([Tools](https://support.ala.org.au/support/solutions/articles/6000208466-tools),
+[Import](https://support.ala.org.au/support/solutions/articles/6000208473-import),
+[Spatial layers](https://support.ala.org.au/support/solutions/articles/6000262426-spatial-layers)), and the 3.1.0 code and spec.
+
+### Configuration
+
+| Variable | Meaning |
+|---|---|
+| `SPATIAL_URL` / `--spatial` | spatial-service base URL including `/ws` |
+| `SPATIAL_GEOSERVER_URL` / `--geoserver` | GeoServer base (default `<host>/geoserver`) |
+| `SPATIAL_TOKEN` | OIDC access token of an admin user |
+| `SPATIAL_OIDC_ISSUER` or `SPATIAL_OIDC_TOKEN_URL`, `SPATIAL_OIDC_CLIENT_ID`, `SPATIAL_OIDC_CLIENT_SECRET`, `SPATIAL_OIDC_USERNAME`, `SPATIAL_OIDC_PASSWORD`, `SPATIAL_OIDC_SCOPE` | password grant, token cached and renewed (discovery finds the token endpoint) |
+| `SPATIAL_API_KEY` | serviceKey, only for `/tasks/create` and `/tasks/cancel` without a user |
+| `SPATIAL_READONLY=1` / `--readonly` | refuse every write |
+| `SPATIAL_ALLOWED_DIRS` | `:`-separated directories zips may be read from |
+| `SPATIAL_POLL_WAIT_MS` | how long a write waits for its tasks (default 20000) |
+| `PORT`, `HOST` | HTTP transport (default 127.0.0.1:3920) |
+
+### Remote (HTTP) transport
+
+```bash
+docker build -t spatial-mcp . && docker run -p 3920:3920 -e SPATIAL_URL=https://spatial.l-a.site/ws spatial-mcp
+```
+
+`src/http.ts` serves Streamable HTTP at `/mcp` (stateless, JSON responses) and `/health`. Each request gets a fresh
+MCP server bound to the caller's own `Authorization: Bearer <token>`, which is forwarded to spatial-service and never
+stored; without a token only public tools work. The idea is to run it next to spatial-service behind the same proxy
+(e.g. an optional service in la-docker-compose), so admins connect by URL and install nothing. Not done yet: OAuth
+discovery for MCP clients (they need to obtain the token themselves).
+
 ## Findings about spatial-service 3.1.0
 
 1. **An API key no longer grants admin.** In 2.x `LoginInterceptor` let a valid API key through `@RequireAdmin`;
@@ -75,6 +151,13 @@ transport of this server gives users the same "nothing to install" experience wi
   demo stack deployed by `la-docker-compose-tests`, waits while that job runs (it wipes `/data`), reads the admin
   credentials from the lademo inventory without echoing them, and runs the admin integration test, which creates
   and deletes an `mcp_poc_*` layer.
+
+## License
+
+MPL-2.0. spatial-service and spatial-hub are MPL-1.1 (file headers, and `info.license` of the OpenAPI spec), which
+allows use under later versions, so MPL-2.0 keeps this compatible and open to contributing parts upstream.
+Dependencies are MIT. `reference/3.1.0/` contains files from spatial-service 3.1.0 under their MPL-1.1 notice
+(`reference/3.1.0/NOTICE`).
 
 ## Not covered yet
 

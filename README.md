@@ -1,141 +1,155 @@
 # spatial-mcp
 
 > **Experimental proof of concept.** This is not production software and it is not an ALA or Living Atlases
-> product. It exists to find out whether routine [spatial-service](https://github.com/AtlasOfLivingAustralia/spatial-service)
-> admin work can be done safely by an AI agent through [MCP](https://modelcontextprotocol.io). Try it on a
-> test portal first (e.g. the LA demo stack), never directly on production.
+> product. Try it on a test portal first (for example the LA demo, spatial.l-a.site), never directly on production.
 
-An MCP server that lets an agent (Claude, or any MCP client) do the routine work of an ALA / Living Atlases
-Spatial Portal: **adding layers** step by step as the LA wiki describes it, checking them, editing their metadata,
-following background tasks, creating areas and running the portal's analyses.
+spatial-mcp lets you administer a Living Atlases **Spatial Portal** by talking to an AI assistant (Claude, or any
+[MCP](https://modelcontextprotocol.io) client) instead of clicking through the spatial-service admin pages.
+It is aimed at the people who run a portal: adding layers, checking them, fixing their metadata, watching the
+background tasks.
 
-It is the sibling of [ipt-mcp](https://github.com/vjrj/ipt-mcp) (GBIF IPT), with a difference: spatial-service
-**has an API**, including an OpenAPI spec (`/ws/openapi/openapi.json`), so this server is a thin layer over real
-endpoints instead of a form scraper. The one exception is layer administration, which only exists as admin web
-pages, so for those the server submits the same forms a person would, guarded by the *form contract* (below).
+You ask in plain language, for example *"add this shapefile as a layer of regions"*. The assistant checks
+the file, shows you what it is going to do, and only does it after you say yes.
 
-## What it can do
+## What you can do with it
 
-| Tool | What for | Changes anything? |
-|---|---|---|
-| `spatial_health` | Which spatial-service, its version, whether admin access works, drift vs 3.1.0 | no |
-| `spatial_list_layers`, `spatial_get_layer` | Layers (filter by text) | no |
-| `spatial_list_fields`, `spatial_get_field`, `spatial_list_objects` | Fields (`cl…` contextual, `el…` environmental) and their objects | no |
-| `spatial_search_gazetteer`, `spatial_intersect` | Find objects by name; values of fields at a point | no |
-| `spatial_capabilities` | Analyses/processes the server can run and their inputs | no |
-| `inspect_layer_zip` | Check a local zip before uploading (files, WGS84, DBF encoding, columns) | no (local) |
-| `spatial_add_layer` | The whole wiki procedure: upload → layer → field → wait for tasks → reload intersect | **yes** (dry run by default) |
-| `spatial_upload`, `spatial_create_layer`, `spatial_create_field` | The same, one step at a time | **yes** (dry run by default) |
-| `spatial_verify_layer` | The wiki's step 8 checks (layers, fields, objects, KML, intersect, GeoServer, admin page) | no |
-| `spatial_update_layer`, `spatial_update_field` | Edit metadata, classification, licence, flags | **yes** (dry run by default) |
-| `spatial_form_contract` | What the admin form allows for a layer/field, and drift vs 3.1.0 | no |
-| `spatial_layer_admin`, `spatial_list_uploads` | Admin view: a layer's fields and tasks; pending uploads | no |
-| `spatial_reload_intersect_config` | Make new fields answer `/intersect` | **yes** (asks to confirm) |
-| `spatial_delete` | Delete a layer, field or upload | **yes, destructive** (asks to confirm) |
-| `spatial_list_tasks`, `spatial_task_status` | Background tasks and their log | no |
-| `spatial_run_task` | Run an analysis (Area report, AOO/EOO, Points to grid…) or a maintenance process (Thumbnails, Tabulation…) | **yes** (dry run by default) |
-| `spatial_cancel_task`, `spatial_rerun_task` | Cancel or re-run a task | **yes** (asks to confirm) |
-| `spatial_compare_remote`, `spatial_import_from_remote` | Compare with / copy layer definitions from another spatial-service | import: **yes** |
-| `spatial_create_area`, `spatial_delete_area` | User areas from WKT or GeoJSON (the portal's "Import > Areas") | **yes** |
+**Add a layer** (it follows the Living Atlases wiki page
+[Adding Layers](https://github.com/AtlasOfLivingAustralia/documentation/wiki/Adding-Layers), step by step):
+- check a zip before uploading it: that it has SHP, SHX, DBF and PRJ; that it is in WGS84; the DBF encoding;
+  which column holds the name of each area;
+- upload it, create the layer, create the field, wait for the background tasks and reload the intersect configuration;
+- check the result the way the wiki's step 8 does: the layer and field are listed, the areas exist, KML and
+  intersect work, GeoServer draws it, the admin page opens.
 
-The operations come from the public documentation: the Living Atlases wiki
-[Adding Layers](https://github.com/AtlasOfLivingAustralia/documentation/wiki/Adding-Layers) and
-[Configuring the Spatial Portal](https://github.com/AtlasOfLivingAustralia/documentation/wiki/Configuring-the-Spatial-Portal),
-the ALA support articles on the Spatial Portal ([Tools](https://support.ala.org.au/support/solutions/articles/6000208466-tools),
-[Import](https://support.ala.org.au/support/solutions/articles/6000208473-import),
-[Spatial layers](https://support.ala.org.au/support/solutions/articles/6000262426-spatial-layers)), and the spatial-service 3.1.0 code and OpenAPI spec.
+**Look after existing layers**
+- list and search layers and fields; see their areas (objects);
+- change a layer's display name, description, classification (the tree in the portal), licence, or enable/disable it;
+- change a field's name, description, or whether it is searchable in the gazetteer;
+- delete a layer, a field or an unused upload;
+- compare your layers with another portal (e.g. spatial.ala.org.au) and copy a layer definition from it.
 
-## How it avoids breaking the admin UI
+**Background tasks**
+- see what is queued, running or failed, and the log of a task;
+- cancel or re-run a task;
+- run maintenance processes (thumbnails, tabulations…) and the portal's analyses (Area report, AOO/EOO,
+  Points to grid…, see ALA's [Spatial Portal tools](https://support.ala.org.au/support/solutions/articles/6000208466-tools)).
 
-Adding and editing layers goes through `/manageLayers/*`, the admin web pages of spatial-service. They are not
-part of the documented API, and the server does not enforce what the HTML form enforces: `maxlength`s (a
-`requestedId` of 15 characters, a `scale` of 20, names of 150…), the options of the selects (`type`, `domain`,
-`licence_level`, and `sname`, which must be one of the uploaded DBF's columns) and the fields that become
-read-only once a layer exists (`name`, `type`, `domain`, environmental units). Something the form cannot express
-could leave a layer the UI cannot show or edit.
+**Areas**: create an area from WKT or GeoJSON, like the portal's *Import > Areas*, and delete it.
 
-So every write reads the **live form** first and sends exactly what a browser would send with it, the form's own
-defaults included, and refuses anything else:
+## Before you start
 
-- a field added, or a `maxlength`/option changed in a new spatial-service version → picked up automatically;
-- a field renamed or removed → **refused** (fail closed), naming the field; nothing is sent;
-- a read-only field → cannot be changed;
-- drift is visible with `spatial_form_contract` and checked in CI against the 3.1.0 reference forms, which are
-  rendered from the real GSP views (`reference/3.1.0/`, `scripts/render-gsp.mjs`).
+You need:
+1. **Node.js 20 or later** on the computer where the assistant runs.
+2. **An admin account** on the portal (a user with the admin role, e.g. `ROLE_ADMIN`). Since spatial-service 3
+   the admin pages need a logged-in admin: an API key is not enough. Without an account you can still use the
+   read-only tools (list layers, fields, intersect…).
+3. The **OIDC client** (id and secret) your portal uses for spatial, from your inventory
+   (`spatial_client_id` / `spatial_client_secret` in the la-toolkit / ala-install passwords file), and your
+   auth server address (e.g. `https://auth.l-a.site/cas/oidc`).
 
-Because the MCP posts the same fields as the form, whatever it creates looks the same in the admin UI as a layer
-created by hand; the integration tests check that the admin pages render it.
-
-## Setup
-
-Needs Node.js 20+.
+## Install
 
 ```bash
-git clone https://github.com/vjrj/spatial-mcp && cd spatial-mcp && npm ci
+git clone https://github.com/vjrj/spatial-mcp
+cd spatial-mcp
+npm ci
 ```
 
-### Local (stdio), e.g. Claude Code or Claude Desktop
+Add it to Claude Code (one line; adapt the URLs, the client and your account):
 
 ```bash
-claude mcp add spatial -e SPATIAL_OIDC_ISSUER=https://auth.l-a.site/cas/oidc -e SPATIAL_OIDC_CLIENT_ID=... \
-  -e SPATIAL_OIDC_CLIENT_SECRET=... -e SPATIAL_OIDC_USERNAME=admin@example.org -e SPATIAL_OIDC_PASSWORD=... \
-  -e SPATIAL_ALLOWED_DIRS=$HOME/layers -- npx tsx /path/to/spatial-mcp/src/stdio.ts --spatial https://spatial.l-a.site/ws
+claude mcp add spatial -e SPATIAL_OIDC_ISSUER=https://auth.l-a.site/cas/oidc -e SPATIAL_OIDC_CLIENT_ID=your-client-id -e SPATIAL_OIDC_CLIENT_SECRET=your-client-secret -e SPATIAL_OIDC_USERNAME=you@example.org -e SPATIAL_OIDC_PASSWORD=your-password -e SPATIAL_ALLOWED_DIRS=/home/you/layers -- npx tsx /path/to/spatial-mcp/src/stdio.ts --spatial https://spatial.l-a.site/ws
 ```
 
-Without credentials only the public tools work. Admin tools in spatial-service 3.x need a **user with the admin
-role**; an API key is not enough any more. Configure either:
+For Claude Desktop, add the same to `claude_desktop_config.json`:
 
-| Variable | Meaning |
+```json
+{
+  "mcpServers": {
+    "spatial": {
+      "command": "npx",
+      "args": ["tsx", "/path/to/spatial-mcp/src/stdio.ts", "--spatial", "https://spatial.l-a.site/ws"],
+      "env": {
+        "SPATIAL_OIDC_ISSUER": "https://auth.l-a.site/cas/oidc",
+        "SPATIAL_OIDC_CLIENT_ID": "your-client-id",
+        "SPATIAL_OIDC_CLIENT_SECRET": "your-client-secret",
+        "SPATIAL_OIDC_USERNAME": "you@example.org",
+        "SPATIAL_OIDC_PASSWORD": "your-password",
+        "SPATIAL_ALLOWED_DIRS": "/home/you/layers"
+      }
+    }
+  }
+}
+```
+
+| Setting | What it is |
 |---|---|
-| `SPATIAL_URL` / `--spatial` | spatial-service base URL including `/ws` |
-| `SPATIAL_TOKEN` | an OIDC access token of an admin user |
-| `SPATIAL_OIDC_ISSUER` (or `SPATIAL_OIDC_TOKEN_URL`), `SPATIAL_OIDC_CLIENT_ID`, `SPATIAL_OIDC_CLIENT_SECRET`, `SPATIAL_OIDC_USERNAME`, `SPATIAL_OIDC_PASSWORD` | get and renew a token with the password grant |
-| `SPATIAL_API_KEY` | serviceKey, only for `/tasks/create` and `/tasks/cancel` without a user |
-| `SPATIAL_READONLY=1` | refuse every write (dry runs still work) |
-| `SPATIAL_ALLOWED_DIRS` | `:`-separated directories layer zips may be read from |
-| `SPATIAL_GEOSERVER_URL` | GeoServer base (default `<host>/geoserver`) |
+| `--spatial` (or `SPATIAL_URL`) | Your spatial-service address, ending in `/ws` |
+| `SPATIAL_OIDC_*` | Your admin login (see *Before you start*) |
+| `SPATIAL_TOKEN` | Instead of the above: an access token you already have |
+| `SPATIAL_ALLOWED_DIRS` | Folders the assistant may upload zips from (recommended) |
+| `SPATIAL_READONLY=1` | Look, don't touch: every change is refused (previews still work) |
 
-### Remote (Streamable HTTP), nothing to install for users
+Then ask *"Is the spatial MCP working?"*: it answers with the portal version, the number of layers and whether
+your admin access works.
 
-```bash
-docker build -t spatial-mcp . && docker run -p 3920:3920 -e SPATIAL_URL=https://spatial.l-a.site/ws spatial-mcp
-```
+## Adding a layer, step by step
 
-Run it next to spatial-service, behind the same proxy (e.g. as an extra service in la-docker-compose), and
-connect MCP clients to `https://<host>/mcp` with the user's own `Authorization: Bearer <token>`. The server holds
-no credentials: each request is served with the caller's token, which is forwarded to spatial-service and never
-stored.
+1. **Prepare the zip.** One layer per zip: a shapefile (SHP, SHX, DBF, PRJ) or a grid (HDR, BIL, PRJ), in WGS84,
+   with the DBF in ISO-8859-1. A GeoTIFF has to be converted first (`gdal_translate -of EHdr …`).
+2. **Ask the assistant to check it:** *"Check ~/layers/comarcas.zip"*. It tells you what is wrong, if anything,
+   and which column looks like the name of each area.
+3. **Ask for the layer:** *"Add ~/layers/comarcas.zip as a contextual layer called `comarcas`, shown as
+   'Comarcas', under Area Management > Administrative, with the COMARCA column as the name of each area."*
+   It shows you a **preview** of exactly what it will fill in on the admin form. Nothing has been changed yet.
+4. **Say yes.** It uploads, creates the layer and the field, and waits for the tasks. Small layers finish in a
+   few minutes; for big ones it tells you it is still working and checks back when you ask.
+5. **Check it:** *"Check the new layer with a point in Zaragoza."* It runs the wiki's checks and tells you which
+   ones pass.
 
-## What to ask
+You can also do it one step at a time (*"just upload it"*, *"now create the field"*), exactly like in the admin pages.
 
-- *"Check `~/layers/comarcas.zip` and tell me what's wrong with it."*
-- *"Add `~/layers/comarcas.zip` as a contextual layer called `comarcas`, shown as 'Comarcas', under Area Management
-  > Administrative, with the COMARCA column as the name of each area. Show me the preview first."*
-- *"Is the layer ready? Check it like the wiki says, with a point in Zaragoza."*
-- *"Move the layer `comarcas` to the Political > Regions classification and set the licence to CC BY."*
+## More things to ask
+
+- *"Which layers do we have under Area Management?"*
+- *"Move the layer `comarcas` to Political > Regions and set the licence to CC BY."*
+- *"Hide the layer `test_old`"* (disable it) or *"delete the layer `mcp_poc_…` and its upload."*
 - *"What tasks failed this week? Show me the log of the last FieldCreation."*
+- *"Re-run the thumbnails."*
 - *"Which layers does spatial.ala.org.au have that we don't?"*
 - *"Create an area from this GeoJSON and run an Area report on it."*
-- *"Delete the test layer `mcp_poc_…` and its upload."*
 
-## Security
+## Is it safe?
 
-- Writes are dry runs unless the call says `dryRun:false` **and** `confirm:true`; deletes and cancels need `confirm:true`.
-  The server's instructions tell the agent to show the preview and ask first.
-- `SPATIAL_READONLY=1` blocks every write.
-- Tokens, passwords and keys are redacted from everything returned to the model.
-- Only `.zip` files outside hidden directories (and inside `SPATIAL_ALLOWED_DIRS`, if set) can be uploaded.
-- The HTTP transport stores nothing and has no credentials of its own.
+- **Nothing changes without your OK.** Every change is first shown as a preview; the assistant has to ask you
+  and repeat the call with an explicit confirmation. Deleting and cancelling always ask.
+- **It cannot do what the admin pages cannot do.** It fills in the same forms you would, with the same limits
+  (lengths, allowed values, fields that cannot change once a layer exists). If a new spatial-service version
+  changes a form in a way it does not understand, it stops instead of guessing.
+- **It only uploads `.zip` files**, never from hidden folders, and only from `SPATIAL_ALLOWED_DIRS` if you set it.
+- **Your password and tokens are never shown to the assistant**, not even in error messages.
+- **`SPATIAL_READONLY=1`** turns it into a look-only tool.
 
-## Tests
+It is still a proof of concept: use a test portal, and keep an eye on what it does.
 
-`npm test` runs the unit tests and an end-to-end MCP test against a fake spatial-service that renders the real
-3.1.0 admin forms. `npm run test:integration` runs against a real spatial-service (`SPATIAL_TEST_URL`); with admin
-credentials it adds a `mcp_poc_<timestamp>` layer, checks it and deletes it. CI: GitHub Actions (unit + anonymous
-checks against the LA demo) and a Jenkins job next to the LA demo stack (admin tests). See [DEVELOPMENT.md](DEVELOPMENT.md).
+## When something goes wrong
 
-## License
+| Message | What to do |
+|---|---|
+| *needs a logged-in user with the admin role* (401/403) | Check the `SPATIAL_OIDC_*` settings, and that your account has the admin role in the portal. |
+| *not in WGS84* | Reproject the layer to EPSG:4326 (QGIS *Export > Save as*, or `ogr2ogr -t_srs EPSG:4326`). |
+| *"sname" is needed* | Tell it which DBF column holds the name of each area (the check in step 2 suggests one). |
+| *Refused by the form contract* | What you asked for doesn't fit the admin form (too long, not an allowed value, or it can't be changed). Change it, or do it by hand. |
+| *LayerCreation/FieldCreation failed* | Ask for the task log. The usual causes are the projection, the encoding, or GeoServer. |
+| *is not a field of the form* | The spatial-service version changed its admin form. Please open an issue. |
 
-[MPL-2.0](LICENSE). spatial-service and spatial-hub are MPL-1.1, which allows use under later versions, so MPL-2.0
-keeps this compatible with them and open to contributing parts upstream. The files in `reference/` come from
-spatial-service 3.1.0 and keep their MPL-1.1 notice (see `reference/3.1.0/NOTICE`).
+## Using it without installing anything (for portal operators)
+
+The same server can run next to spatial-service, so admins connect to it by URL instead of installing it. See
+[DEVELOPMENT.md](DEVELOPMENT.md#remote-http-transport).
+
+## More
+
+- [DEVELOPMENT.md](DEVELOPMENT.md): how it works, design decisions, tests and CI, what spatial-service would need.
+- License: [MPL-2.0](LICENSE) (compatible with spatial-service's MPL-1.1; see DEVELOPMENT.md).
+- Sibling POC for the GBIF IPT: [ipt-mcp](https://github.com/vjrj/ipt-mcp).
