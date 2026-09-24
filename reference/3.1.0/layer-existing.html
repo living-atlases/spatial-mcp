@@ -1,0 +1,231 @@
+<form method="POST">
+
+                        <table class="table table-condensed">
+
+                            <tr>
+                                <td class="col-md-4">
+                                    <label for="name"
+                                           style="color:red">Name (lowercase, characters a-z, 0-9, _ only, as short as possible, used internally)
+                                    [readonly because layer is created]
+                                    [cannot be changed after layer is created]:</label>
+                                </td><td class="col-md-8">
+                                <input class="form-control" type="text" id="name" name="name" value="mcp_poc_regions"
+                                       maxlength="150"
+                                       readonly="true"/>
+                            </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <label for="displayname">Display name:</label></td><td>
+                                <input class="form-control" type="text" id="displayname" name="displayname"
+                                       value="MCP POC regions" maxlength="150"/>
+                            </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <label for="description">Description (A short description of this layer):</label>
+                                </td><td>
+                                <textarea class="form-control" id="description" name="description" cols="150"
+                                          rows="10"></textarea>
+                            </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <label for="requestedId">requestedId (optional):</label></td><td>
+                                <input type="text" class="form-control" id="requestedId" name="requestedId"
+                                       value=""
+                                       maxlength="15"/>
+                            </td>
+                            </tr>
+                            <tr>
+                                <td>
+
+                                    <label for="type" style="color:red">Type
+                                    [readonly because layer is created]
+                                    [cannot be changed after layer is created]
+                                    :</label></td><td>
+                                
+                                
+                                    <input class="form-control" readonly type="text" id="type" name="type"
+                                           value="Contextual"
+                                           maxlength="150"/>
+                                
+                            </td></tr><tr><td>
+
+                            <label for="domain" style="color:red">Domain
+                            [readonly because layer is created]
+                            [cannot be changed after layer is created]
+                            :</label></td><td>
+                            
+                            
+                                <input class="form-control" readonly type="text" id="domain" name="domain"
+                                       value="Terrestrial"
+                                       maxlength="150"/>
+                            
+                        </td></tr><tr><td>
+
+                            <label for="source">Source (e.g. organisation name):</label></td><td>
+                            <input class="form-control" type="text" id="source" name="source" value=""
+                                   maxlength="150"/>
+                        </td></tr><tr><td>
+
+                            <label for="scale">Scale (e.g. "0.01 degree (~1km)", "> 1:150,000", for display in metadata only) :</label>
+                        </td><td>
+                            <input class="form-control" type="text" id="scale" name="scale" value=""
+                                   maxlength="20"/>
+                        </td></tr><tr><td>
+
+                            <label for="environmentalvaluemin">Min Environmental value (Environmental Only) [readonly]</label>
+                        </td><td>
+                            <input class="form-control" type="readonly" id="environmentalvaluemin"
+                                   name="environmentalvaluemin" value=""
+                                   readonly/>
+                        </td></tr><tr><td>
+
+                            <label for="environmentalvaluemax">Max Environmental value (Environmental Only) [readonly]</label>
+                        </td><td>
+                            <input class="form-control" type="readonly" id="environmentalvaluemax"
+                                   name="environmentalvaluemax" value=""
+                                   readonly/>
+                        </td></tr><tr><td>
+
+                            <label for="environmentalvalueunits"
+                                   style="color:red">Environmental value units (Environmental Only) (e.g. degrees C, mm, dimensionless)
+                            [readonly because layer is created]
+                            [cannot be changed after layer is created]
+                            </label></td><td>
+                        <input class="form-control"
+                                type="text" id="environmentalvalueunits" name="environmentalvalueunits" value=""
+                                maxlength="150" readonly="true"
+                        </input>
+                        </td></tr><tr><td>
+
+                            <label for="minlongitude">Minimum Longitude</label></td><td>
+                            <input class="form-control" id="minlongitude" name="minlongitude"
+                                   value="" maxlength="256"/>
+                        </td></tr><tr><td>
+
+                            <label for="maxlongitude">Maximum Longitude</label></td><td>
+                            <input class="form-control" id="maxlongitude" name="maxlongitude"
+                                   value="" maxlength="256"/>
+                        </td></tr><tr><td>
+
+                            <label for="minlatitude">Minimum Latitude</label></td><td>
+                            <input class="form-control" id="minlatitude" name="minlatitude"
+                                   value="" maxlength="256" />
+                        </td></tr><tr><td>
+
+                            <label for="maxlatitude">Maximum Latitude </label></td><td>
+                            <input class="form-control" id="maxlatitude" name="maxlatitude"
+                                   value="" maxlength="256" />
+                        </td></tr><tr><td>
+
+                            <label for="metadatapath">Metadata path (e.g. URL to original metadata, if available)</label>
+                        </td><td>
+                            <input class="form-control" type="text" id="metadatapath" name="metadatapath"
+                                   value="" maxlength="300"/>
+                        </td></tr><tr><td>
+
+                            <i>List of all classifications already defined:</i></td><td>
+                            <select class="form-control" id='classificationList' onchange="setClassification()">
+                                
+                            </select>
+                            <script>
+                                function setClassification() {
+                                    classification1.value = classificationList.value.split(' > ')[0].replace("null", "").replace(">", "").trim();
+                                    classification2.value = classificationList.value.split(' > ').length < 2 ? "" : classificationList.value.split(' > ')[1].replace("null", "").replace(">", "").trim();
+                                }
+                            </script>
+                        </td></tr><tr><td>
+
+                            <label for="classification1">Classification 1 (e.g. choose from existing or enter a new classification1, e.g.
+                            Climate)</label></td><td>
+                            <input class="form-control" type="text" id="classification1" name="classification1"
+                                   value="Area Management" maxlength="150"/>
+                        </td></tr><tr><td>
+
+                            <label for="classification2">Classification 2 (e.g. choose from existing or enter a new classification1, e.g.
+                            Humidity)</label></td><td>
+                            <input class="form-control" type="text" id="classification2" name="classification2"
+                                   value="" maxlength="150"/>
+                        </td></tr><tr><td>
+
+                            <label for="mddatest">Metadata date (e.g. "2011-08-23")</label></td><td>
+                            <input class="form-control" type="text" id="mddatest" name="mddatest" value=""
+                                   maxlength="30"/>
+                        </td></tr><tr><td>
+
+                            <label for="citation_date">Citation date (e.g. "2011-08-23")</label></td><td>
+                            <input class="form-control" type="text" id="citation_date" name="citation_date"
+                                   value="" maxlength="30"/>
+                        </td></tr><tr><td>
+
+                            <label for="datalang">Data language (e.g. "eng")</label></td><td>
+                            <input class="form-control" type="text" id="datalang" name="datalang" value=""
+                                   maxlength="5"/>
+                        </td></tr><tr><td>
+
+                            <label for="respparty_role">Responsible party role (e.g. Custodian, Author, Processor, Distributor, ResourceProvider)</label>
+                        </td><td>
+                            <input class="form-control" type="text" id="respparty_role" name="respparty_role"
+                                   value="" maxlength="30"/>
+                        </td></tr><tr><td>
+
+                            <label for="licence_link">Licence link (URL to licence)</label></td><td>
+                            <input class="form-control" type="text" id="licence_link" name="licence_link"
+                                   value=""/>
+                        </td></tr><tr><td>
+
+                            <label for="licence_level">Licence level</label></td><td>
+                            <select class="form-control" id="licence_level" name="licence_level">
+                                <option value="1"
+                                        >Permission to distribute, see Licence notes
+                                </option>
+                                <option value="2"
+                                        selected>Varies, see Licence notes
+                                </option>
+                                <option value="3"
+                                        >Permitted to distribute, see Licence notes
+                                </option>
+                            </select>
+                        </td></tr><tr><td>
+
+                            <label for="licence_notes">Licence notes (details of the licence, e.g. "CC BY")</label>
+                        </td><td>
+                            <textarea class="form-control" id="licence_notes" name="licence_notes" cols="150" rows="6"
+                                      maxlength="1024"></textarea>
+                        </td></tr><tr><td>
+
+                            <label for="source_link">Source link (URL to source data or information, if available)</label>
+                        </td><td>
+                            <input class="form-control" type="text" id="source_link" name="source_link"
+                                   value="" maxlength="300"/>
+                        </td></tr><tr><td>
+
+                            <label for="keywords">Keywords (Used in layer searches, e.g. "solar, sun"):</label></td><td>
+                            <input class="form-control" type="text" id="keywords" name="keywords" value=""
+                                   maxlength="256"/>
+                        </td></tr><tr><td>
+
+                            <label for="notes">Notes (any other information about the layer):</label></td><td>
+                            <textarea class="form-control" id="notes" name="notes" cols="150"
+                                      rows="10"></textarea>
+                        </td></tr>
+                            <tr><td>
+
+                                <label for="enabled">Enabled (makes the layer available for use, disable to remove layers from use)</label>
+                            </td><td>
+                                <input class="form-control" type="checkbox" id="enabled" name="enabled"
+                                       checked/>
+
+                            </td></tr>
+                        </table>
+
+
+                        <input type="submit" class="btn btn-default"
+                               value='Update Layer'/>
+
+                        <input type="hidden" name="raw_id" value="1234"/>
+
+                        <input type="hidden" name="id" value="1790000000000"/>
+                    </form>

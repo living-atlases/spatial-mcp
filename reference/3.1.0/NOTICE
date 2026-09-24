@@ -1,0 +1,15 @@
+Files in this directory come from, or are rendered from, AtlasOfLivingAustralia/spatial-service 3.1.0
+(https://github.com/AtlasOfLivingAustralia/spatial-service, tag 3.1.0):
+
+- layer.gsp, field.gsp: grails-app/views/manageLayers/*.gsp, copied unmodified.
+- layer-new.html, layer-existing.html, field-new.html: the POST form of those views rendered with
+  scripts/render-gsp.mjs and a sample model (see scripts/render-reference.sh).
+- openapi.json: the OpenAPI document published by spatial-service 3.1.0 at /ws/openapi/openapi.json.
+
+Copyright (C) Atlas of Living Australia. All Rights Reserved.
+These files are subject to the Mozilla Public License Version 1.1 (the "License"); you may not use
+them except in compliance with the License. You may obtain a copy of the License at
+https://www.mozilla.org/MPL/1.1/
+
+They are reference material used to preview writes (dry runs) and to detect drift between the
+spatial-service version this POC was written against and the one it talks to.

@@ -1,0 +1,3365 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "SpatialService REST services",
+    "description": "REST services for interacting with the spatial-service webapp",
+    "termsOfService": "",
+    "contact": {
+      "name": "Support",
+      "email": "support@l-a.site"
+    },
+    "license": {
+      "name": "Mozilla Public License 1.1",
+      "url": "https://www.mozilla.org/en-US/MPL/1.1/"
+    },
+    "version": "3.1.0"
+  },
+  "servers": [
+    {
+      "url": "https://spatial.l-a.site/ws"
+    }
+  ],
+  "paths": {
+    "/checklists": {
+      "get": {
+        "tags": [
+          "checklists"
+        ],
+        "summary": "Get list of checklists",
+        "description": "Get a list of expert distributions",
+        "operationId": "getChecklists",
+        "parameters": [
+          {
+            "name": "lsids",
+            "in": "query",
+            "description": "LSIDs to filter, comma delimited",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "geom_idx",
+            "in": "query",
+            "description": "Geometry index to filter",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "data_resource_uids",
+            "in": "query",
+            "description": "Data resource UIDs to filter, comma delimited",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "wkt",
+            "in": "query",
+            "description": "WKT or Object ID to filter",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pid",
+            "in": "query",
+            "description": "Object ID to filter",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "description": "Starting index for pagination",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Page size for pagination",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of checklists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Distributions"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/checklist/lsids/{lsid}": {
+      "get": {
+        "tags": [
+          "checklists"
+        ],
+        "summary": "Get checklist items by LSID",
+        "operationId": "getChecklistItemsByLSID",
+        "parameters": [
+          {
+            "name": "lsid",
+            "in": "path",
+            "description": "LSID of the checklist item",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "nowkt",
+            "in": "query",
+            "description": "true to exclude WKT from the response",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List checklist items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Distributions"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/checklist/{id}": {
+      "get": {
+        "tags": [
+          "checklists"
+        ],
+        "summary": "Get a checklist item",
+        "operationId": "getChecklistItem",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Id of the checklist item",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "nowkt",
+            "in": "query",
+            "description": "true to exclude WKT from the response",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "checklist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Distributions"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/distributions": {
+      "get": {
+        "tags": [
+          "distributions"
+        ],
+        "summary": "Get list of expert distributions",
+        "description": "Get a list of expert distributions",
+        "operationId": "getDistributions",
+        "parameters": [
+          {
+            "name": "lsids",
+            "in": "query",
+            "description": "LSID to filter",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "geom_idx",
+            "in": "query",
+            "description": "Geometry index to filter",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "data_resource_uids",
+            "in": "query",
+            "description": "Data resource UIDs to filter",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "wkt",
+            "in": "query",
+            "description": "WKT or Object ID to filter",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pid",
+            "in": "query",
+            "description": "Object ID to filter",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "description": "Starting index for pagination",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Page size for pagination",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of expert distributions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Distributions"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/distributions/lsids": {
+      "get": {
+        "tags": [
+          "distributions"
+        ],
+        "summary": "Get list of species level LSIDs that have an expert distribution",
+        "operationId": "getLsids",
+        "responses": {
+          "200": {
+            "description": "List of LSIDs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/distribution/lsids/{lsid}": {
+      "get": {
+        "tags": [
+          "distributions"
+        ],
+        "summary": "Get expert distributions by LSID",
+        "description": "Get expert distributions by LSID",
+        "operationId": "getExpertDistributionsByLsid",
+        "parameters": [
+          {
+            "name": "lsid",
+            "in": "path",
+            "description": "LSID of the expert distribution",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "nowkt",
+            "in": "query",
+            "description": "true to exclude WKT from the response",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List expert distributions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Distributions"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/distribution/map/png/{imageId}": {
+      "get": {
+        "tags": [
+          "distributions"
+        ],
+        "summary": "Get expert distribution image by id",
+        "description": "Get expert distribution image by id",
+        "operationId": "getExpertDistributionImageById",
+        "parameters": [
+          {
+            "name": "imageId",
+            "in": "path",
+            "description": "LSID of the expert distribution",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Overview image of the expert distribution in the Australian region",
+            "content": {
+              "image/png": {}
+            }
+          }
+        },
+        "deprecated": true
+      }
+    },
+    "/distribution/{id}": {
+      "get": {
+        "tags": [
+          "distributions"
+        ],
+        "summary": "Get an expert distribution by Id",
+        "description": "Get an expert distribution by Id",
+        "operationId": "getExpertDistributionById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Id of the expert distribution",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "nowkt",
+            "in": "query",
+            "description": "true to exclude WKT from the response",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "expert distribution",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Distributions"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fieldsdb": {
+      "get": {
+        "tags": [
+          "fields"
+        ],
+        "summary": "Get list of fields for indexing",
+        "description": "Get a list of fields for indexing",
+        "operationId": "getFieldsForIndex",
+        "responses": {
+          "200": {
+            "description": "List of fields for indexing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Fields"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fields": {
+      "get": {
+        "tags": [
+          "fields"
+        ],
+        "summary": "Get list of fields",
+        "description": "Get a list of fields",
+        "operationId": "getFields",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "restrict to field names that contain this value and include layer information",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Fields"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fields/search": {
+      "get": {
+        "tags": [
+          "fields"
+        ],
+        "summary": "search for fields",
+        "operationId": "searchFields",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "restrict to field names that contain this value",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Fields"
+                }
+              }
+            }
+          }
+        },
+        "deprecated": true
+      }
+    },
+    "/fields/layers/search": {
+      "get": {
+        "tags": [
+          "fields"
+        ],
+        "summary": "search for layers",
+        "operationId": "searchLayers",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "restrict to layer names that contain this value",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of layers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Layers"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/field/{id}": {
+      "get": {
+        "tags": [
+          "fields"
+        ],
+        "summary": "Get a field by Id",
+        "description": "Get a field by Id. Includes all objects associated with the field.",
+        "operationId": "getFieldById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Id of the field",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "description": "starting index for associated objects",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "number of associated objects to return",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "restrict to associated object names that contain this value",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "field",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Fields"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intersect/batch": {
+      "post": {
+        "tags": [
+          "intersect"
+        ],
+        "summary": "Get intersection for many points and fields",
+        "operationId": "intersectBatch",
+        "parameters": [
+          {
+            "name": "fids",
+            "in": "query",
+            "description": "Comma delimited list of field IDs",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cl22,cl23"
+          },
+          {
+            "name": "points",
+            "in": "query",
+            "description": "Comma delimited list of `latitude,longitude`",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "double"
+            },
+            "example": "-22,134,-23,130"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status of the batch request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intersect/batch/download/{id}": {
+      "get": {
+        "tags": [
+          "intersect"
+        ],
+        "summary": "Get intersection batch result",
+        "operationId": "intersectBatchDownload",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Batch ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": 15123
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Result of the batch request as a zipped CSV",
+            "content": {
+              "application/zip": {}
+            }
+          }
+        }
+      }
+    },
+    "/intersect/batch/{id}": {
+      "get": {
+        "tags": [
+          "intersect"
+        ],
+        "summary": "Get intersection batch status",
+        "operationId": "intersectBatchStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Batch ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": 15123
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status of the batch request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "example": null
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intersect/geojson/{fid}": {
+      "post": {
+        "tags": [
+          "intersect"
+        ],
+        "summary": "Get intersection of GeoJSON and one field",
+        "operationId": "intersectGeoJSON",
+        "parameters": [
+          {
+            "name": "fid",
+            "in": "path",
+            "description": "field ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cl22"
+          }
+        ],
+        "requestBody": {
+          "description": "GeoJSON",
+          "content": {
+            "*/*": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Intersection results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SpatialObjects"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "deprecated": true
+      }
+    },
+    "/intersect/{ids}/{lat}/{lng}": {
+      "get": {
+        "tags": [
+          "intersect"
+        ],
+        "summary": "Get intersection of a point and one or more fields",
+        "operationId": "intersectPoint",
+        "parameters": [
+          {
+            "name": "ids",
+            "in": "path",
+            "description": "Comma delimited list of field IDs",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cl22"
+          },
+          {
+            "name": "lat",
+            "in": "path",
+            "description": "Latitude",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "double"
+            },
+            "example": -22
+          },
+          {
+            "name": "lng",
+            "in": "path",
+            "description": "Longitude",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "double"
+            },
+            "example": 134
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Intersection results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "example": null
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intersect/object/{fid}/{pid}": {
+      "get": {
+        "tags": [
+          "intersect"
+        ],
+        "summary": "Get intersection of a spatial object and one field",
+        "operationId": "intersectObject",
+        "parameters": [
+          {
+            "name": "fid",
+            "in": "path",
+            "description": "field ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cl22"
+          },
+          {
+            "name": "pid",
+            "in": "path",
+            "description": "Spatial Object ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": 123
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Intersection results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SpatialObjects"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intersect/pointradius/{fid}/{lat}/{lng}/{radius}": {
+      "get": {
+        "tags": [
+          "intersect"
+        ],
+        "summary": "Get intersection of a circle and one or more fields",
+        "operationId": "intersectCircle",
+        "parameters": [
+          {
+            "name": "fid",
+            "in": "path",
+            "description": "Comma delimited list of field IDs",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cl22"
+          },
+          {
+            "name": "lat",
+            "in": "path",
+            "description": "Latitude",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "double"
+            },
+            "example": -22
+          },
+          {
+            "name": "lng",
+            "in": "path",
+            "description": "Longitude",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "double"
+            },
+            "example": 134
+          },
+          {
+            "name": "radius",
+            "in": "path",
+            "description": "Longitude",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "double"
+            },
+            "example": 134
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Intersection results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SpatialObjects"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "deprecated": true
+      }
+    },
+    "/intersect/reloadconfig": {
+      "get": {
+        "tags": [
+          "cache"
+        ],
+        "summary": "Clear caches",
+        "operationId": "clearCache",
+        "responses": {
+          "200": {
+            "description": "Notification that the reload of config was successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "deprecated": true,
+        "security": [
+          {
+            "openIdConnect": []
+          }
+        ]
+      }
+    },
+    "/intersect/wkt/{fid}": {
+      "post": {
+        "tags": [
+          "intersect"
+        ],
+        "summary": "Get intersection of WKT and one field",
+        "operationId": "intersectWKT",
+        "parameters": [
+          {
+            "name": "fid",
+            "in": "path",
+            "description": "field ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cl22"
+          }
+        ],
+        "requestBody": {
+          "description": "WKT",
+          "content": {
+            "*/*": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Intersection results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SpatialObjects"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "deprecated": true
+      }
+    },
+    "/journalMap/count": {
+      "get": {
+        "tags": [
+          "JournalMap"
+        ],
+        "summary": "Get count of Journal Map records within an area",
+        "operationId": "countJournalMap",
+        "parameters": [
+          {
+            "name": "wkt",
+            "in": "query",
+            "description": "WKT to filter",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pid",
+            "in": "query",
+            "description": "Object ID to filter",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Count",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/journalMap/search": {
+      "get": {
+        "tags": [
+          "JournalMap"
+        ],
+        "summary": "Get list of Journal Map records within an area",
+        "operationId": "searchJournalMap",
+        "parameters": [
+          {
+            "name": "wkt",
+            "in": "query",
+            "description": "WKT to filter. Required if pid is not provided.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pid",
+            "in": "query",
+            "description": "Object ID to filter. Required if wkt is not provided.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "starting index for associated objects",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "max",
+            "in": "query",
+            "description": "number of associated objects to return",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of JournalMap items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/layers/layers.csv": {
+      "get": {
+        "tags": [
+          "layers"
+        ],
+        "summary": "Get CSV list of layers",
+        "operationId": "getLayersCSV",
+        "parameters": [
+          {
+            "name": "usage",
+            "in": "query",
+            "description": "Set as True to include layer usage information",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "months",
+            "in": "query",
+            "description": "Number of months for the usage. Default is 12",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CSV of layers",
+            "content": {
+              "application/csv": {}
+            }
+          }
+        }
+      }
+    },
+    "/layer/download/{id}": {
+      "get": {
+        "tags": [
+          "layers"
+        ],
+        "summary": "Get zipped copy of the layer if permitted",
+        "operationId": "getLayerFile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Layer ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "zipped layer file",
+            "content": {
+              "application/zip": {}
+            }
+          }
+        },
+        "security": [
+          {
+            "openIdConnect": []
+          }
+        ]
+      }
+    },
+    "/layers/grids": {
+      "get": {
+        "tags": [
+          "layers"
+        ],
+        "summary": "Get a list of all environmental (raster) layers",
+        "operationId": "listEnvironmentalLayers",
+        "responses": {
+          "200": {
+            "description": "List of layers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Layers"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "deprecated": true
+      }
+    },
+    "/layer/img/{name}": {
+      "get": {
+        "tags": [
+          "layers"
+        ],
+        "summary": "Get thumbnail image of layer",
+        "operationId": "getLayerImage_1",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Layer short name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {}
+        },
+        "responses": {
+          "200": {
+            "description": "Image",
+            "content": {
+              "image/jpg": {}
+            }
+          }
+        }
+      }
+    },
+    "/layers": {
+      "get": {
+        "tags": [
+          "layers"
+        ],
+        "summary": "Get a list of all layers",
+        "operationId": "listLayers",
+        "responses": {
+          "200": {
+            "description": "List of layers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Layers"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/layers/rif-cs": {
+      "get": {
+        "tags": [
+          "layers"
+        ],
+        "summary": "Get a list of all layers in RIF-CS format",
+        "operationId": "listLayersRIFCS",
+        "responses": {
+          "200": {
+            "description": "List of layers",
+            "content": {
+              "text/xml": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Layers"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "deprecated": true
+      }
+    },
+    "/layers/search": {
+      "get": {
+        "tags": [
+          "layers"
+        ],
+        "summary": "search for layers",
+        "operationId": "searchLayers_1",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "restrict to layer names that contain this value",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of layers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Layers"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/layers/shapes": {
+      "get": {
+        "tags": [
+          "layers"
+        ],
+        "summary": "Get a list of all contextual (vector) layers",
+        "operationId": "listContextualLayers",
+        "responses": {
+          "200": {
+            "description": "List of layers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Layers"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "deprecated": true
+      }
+    },
+    "/layer/{id}": {
+      "get": {
+        "tags": [
+          "layers"
+        ],
+        "summary": "Get a layer by layer ID",
+        "operationId": "getLayerById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Layer ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Layer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Layers"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/layerDistances/csv": {
+      "get": {
+        "tags": [
+          "layerDistances"
+        ],
+        "summary": "Get a layer association distances as CSV",
+        "operationId": "getLayerDistancesCSV",
+        "responses": {
+          "200": {
+            "description": "Layer distances",
+            "content": {
+              "text/csv": {}
+            }
+          }
+        },
+        "deprecated": true
+      }
+    },
+    "/layerDistances/csvRawnames": {
+      "get": {
+        "tags": [
+          "layerDistances"
+        ],
+        "summary": "Get a layer association distances as CSV with internal names",
+        "operationId": "getLayerDistancesRawnamesCSV",
+        "responses": {
+          "200": {
+            "description": "Layer distances",
+            "content": {
+              "text/csv": {}
+            }
+          }
+        },
+        "deprecated": true
+      }
+    },
+    "/layerDistances/layerdistancesJSON": {
+      "get": {
+        "tags": [
+          "layerDistances"
+        ],
+        "summary": "Get a layer association distances as JSON",
+        "operationId": "getLayerDistancesJSON",
+        "responses": {
+          "200": {
+            "description": "Layer distances",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/log": {
+      "post": {
+        "tags": [
+          "logging"
+        ],
+        "summary": "Add an entry to the log",
+        "operationId": "log",
+        "requestBody": {
+          "content": {
+            "*/*": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/Log"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Valid request"
+          },
+          "400": {
+            "description": "Invalid request"
+          }
+        }
+      }
+    },
+    "/log/search": {
+      "get": {
+        "tags": [
+          "logging"
+        ],
+        "summary": "Search the log",
+        "operationId": "logSearch",
+        "parameters": [
+          {
+            "name": "accept",
+            "in": "query",
+            "description": "Format of response, application/csv or application/json. The default is application/json.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "application/json"
+          },
+          {
+            "name": "max",
+            "in": "query",
+            "description": "Maximum number of rows to return",
+            "schema": {
+              "type": "string"
+            },
+            "example": 10
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Offset value for paging",
+            "schema": {
+              "type": "string"
+            },
+            "example": 0
+          },
+          {
+            "name": "groupBy",
+            "in": "query",
+            "description": "Grouping for results. A comma delimited list of: \"category1\", \"category2\", \"data\", \"sessionId\", \"userId\", \"year\", \"month\".",
+            "schema": {
+              "type": "string"
+            },
+            "example": "year,category1,category2"
+          },
+          {
+            "name": "countBy",
+            "in": "query",
+            "description": "Type of counts. This is number of records or the number of unique users, sessions, etc. A comma delimited list of: \"category1\", \"category2\", \"record\", \"session\", \"user\"",
+            "schema": {
+              "type": "string"
+            },
+            "example": "record,session,user"
+          },
+          {
+            "name": "admin",
+            "in": "query",
+            "description": "When true, return results for all users if request has an admin role.",
+            "schema": {
+              "type": "string"
+            },
+            "example": true
+          },
+          {
+            "name": "category1",
+            "in": "query",
+            "description": "Limit results to a single category1 value.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category2",
+            "in": "query",
+            "description": "Limit results to a single category2 value.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sessionId",
+            "in": "query",
+            "description": "Limit results to a single sessionId value.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "Limit results between a startDate and endDate.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2000-01-24"
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "Limit results between a startDate and endDate.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2025-01-24"
+          },
+          {
+            "name": "excludeRoles",
+            "in": "query",
+            "description": "Exclude users having specific roles in their profile. Used with admin=true requests",
+            "schema": {
+              "type": "string"
+            },
+            "example": "ROLE_ADMIN, ROLE_EDITOR"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Valid request"
+          },
+          "400": {
+            "description": "Invalid request"
+          }
+        }
+      }
+    },
+    "/objects/{fid}": {
+      "get": {
+        "tags": [
+          "objects"
+        ],
+        "summary": "Get a list of objects in a field",
+        "operationId": "objectsInField",
+        "parameters": [
+          {
+            "name": "fid",
+            "in": "path",
+            "description": "Field ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "description": "Paging start index",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Paging page size",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Spatial Object",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SpatialObjects"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "deprecated": true
+      }
+    },
+    "/object/intersect/{pid}/{lat}/{lng}": {
+      "get": {
+        "tags": [
+          "objects"
+        ],
+        "summary": "Test if a point intersects a single object",
+        "operationId": "nearestObjects",
+        "parameters": [
+          {
+            "name": "pid",
+            "in": "path",
+            "description": "Object ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lat",
+            "in": "path",
+            "description": "latitude",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "lng",
+            "in": "path",
+            "description": "longitude",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Spatial Object",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpatialObjects"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/objects/{fid}/{lat}/{lng}": {
+      "get": {
+        "tags": [
+          "objects"
+        ],
+        "summary": "Get a list of objects nearest to a point",
+        "operationId": "nearestObjects_1",
+        "parameters": [
+          {
+            "name": "fid",
+            "in": "path",
+            "description": "Field ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lat",
+            "in": "path",
+            "description": "latitude",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "lng",
+            "in": "path",
+            "description": "longitude",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "maximum number of items to return",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Spatial Object",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SpatialObjects"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/objects/inarea/{fid}": {
+      "post": {
+        "tags": [
+          "objects"
+        ],
+        "summary": "Get a list of a field's objects that intersect with provided WKT",
+        "operationId": "objectsInWkt",
+        "parameters": [
+          {
+            "name": "fid",
+            "in": "path",
+            "description": "Field ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "wkt",
+            "in": "query",
+            "description": "WKT. pid or wkt is required",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of objects to return",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pid",
+            "in": "query",
+            "description": "Object ID. pid or wkt is required",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Spatial Object",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SpatialObjects"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/object/{pid}": {
+      "get": {
+        "tags": [
+          "objects"
+        ],
+        "summary": "Get a spatial object",
+        "operationId": "getSpatialObject",
+        "parameters": [
+          {
+            "name": "pid",
+            "in": "path",
+            "description": "Id of the checklist item",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Spatial Object",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpatialObjects"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/report": {
+      "get": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "Get a user report as CSV",
+        "operationId": "getUserReport",
+        "responses": {
+          "200": {
+            "description": "Valid request"
+          }
+        }
+      }
+    },
+    "/report/task": {
+      "get": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "Get a task report as CSV",
+        "operationId": "getTaskReport",
+        "responses": {
+          "200": {
+            "description": "Valid request"
+          }
+        }
+      }
+    },
+    "/sandbox/delete": {
+      "delete": {
+        "tags": [
+          "uploads"
+        ],
+        "summary": "Delete a CSV or zipped CSV file containing occurrence points",
+        "operationId": "deleteCSV",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "datasetId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delete the file",
+            "content": {
+              "application/json": {}
+            }
+          }
+        },
+        "security": [
+          {
+            "openIdConnect": []
+          }
+        ]
+      }
+    },
+    "/sandbox/status": {
+      "get": {
+        "tags": [
+          "uploads"
+        ],
+        "summary": "Get the status of a CSV or zipped CSV file containing occurrence points",
+        "operationId": "statusCSV",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "datasetId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status of the file",
+            "content": {
+              "application/json": {}
+            }
+          }
+        },
+        "security": [
+          {
+            "openIdConnect": []
+          }
+        ]
+      }
+    },
+    "/sandbox/upload": {
+      "post": {
+        "tags": [
+          "uploads"
+        ],
+        "summary": "Upload a CSV or zipped CSV file containing occurrence points",
+        "operationId": "uploadCSV",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "description": "datasetName",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Uploaded CSV or zipped CSV file",
+          "content": {
+            "application/zip": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recognised header and a dataResourceUid",
+            "content": {
+              "application/json": {}
+            }
+          }
+        },
+        "security": [
+          {
+            "openIdConnect": []
+          }
+        ]
+      }
+    },
+    "/search": {
+      "get": {
+        "tags": [
+          "objects"
+        ],
+        "summary": "Search all objects by name",
+        "operationId": "searchObjects",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Search term",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Paging page size",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "description": "Paging start index",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "description": "Field IDs to search, comma delimited",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "exclude",
+            "in": "query",
+            "description": "Field IDs to exclude from search, comma delimited",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "checklist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Distributions"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/shape/upload/{pid}": {
+      "delete": {
+        "tags": [
+          "uploads"
+        ],
+        "summary": "Delete an object",
+        "operationId": "deleteObject",
+        "parameters": [
+          {
+            "name": "pid",
+            "in": "path",
+            "description": "Object ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object with the area id",
+            "content": {
+              "application/json": {}
+            }
+          }
+        },
+        "security": [
+          {
+            "openIdConnect": []
+          }
+        ]
+      }
+    },
+    "/shapes/geojson/{pid}": {
+      "get": {
+        "tags": [
+          "objects"
+        ],
+        "summary": "Get GeoJSON for an object",
+        "operationId": "getGeoJSON",
+        "parameters": [
+          {
+            "name": "pid",
+            "in": "path",
+            "description": "Object ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "GeoJSON",
+            "content": {
+              "plain/text": {
+                "schema": {
+                  "$ref": "#/components/schemas/Distributions"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/shapes/kml/{pid}": {
+      "get": {
+        "tags": [
+          "objects"
+        ],
+        "summary": "Get KML for an object",
+        "operationId": "getKML",
+        "parameters": [
+          {
+            "name": "pid",
+            "in": "path",
+            "description": "Object ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "KML",
+            "content": {
+              "plain/text": {
+                "schema": {
+                  "$ref": "#/components/schemas/Distributions"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/shape/upload/shp/{shapeId}/featureIndex": {
+      "post": {
+        "tags": [
+          "objects"
+        ],
+        "summary": "Create an object from a list of features of an uploaded shapefile",
+        "operationId": "uploadShapefileFeature",
+        "parameters": [
+          {
+            "name": "shapeId",
+            "in": "path",
+            "description": "Shapefile ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {}
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Object with the area id",
+            "content": {
+              "application/json": {}
+            }
+          }
+        },
+        "security": [
+          {
+            "openIdConnect": []
+          }
+        ]
+      }
+    },
+    "/shape/upload/shp/image/{shapeId}/{featureIndexes}": {
+      "get": {
+        "tags": [
+          "uploads"
+        ],
+        "summary": "Return an image for an uploaded shapefile and a list of features",
+        "operationId": "getImage",
+        "parameters": [
+          {
+            "name": "shapeId",
+            "in": "path",
+            "description": "Uploaded shapefile ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "featureIndexes",
+            "in": "path",
+            "description": "Comma delimited list of feature indexes or the keyword `all` for all features",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Image of features",
+            "content": {
+              "image/png": {}
+            }
+          }
+        }
+      }
+    },
+    "/shapes/shp/{pid}": {
+      "get": {
+        "tags": [
+          "objects"
+        ],
+        "summary": "Get zipped shapefile for an object",
+        "operationId": "getShapefile",
+        "parameters": [
+          {
+            "name": "pid",
+            "in": "path",
+            "description": "Object ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Zipped Shapefile",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "$ref": "#/components/schemas/Distributions"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/shape/upload/geojson/{pid}": {
+      "post": {
+        "tags": [
+          "uploads"
+        ],
+        "summary": "Update an object with new GeoJSON",
+        "operationId": "updateGeoJSON",
+        "parameters": [
+          {
+            "name": "pid",
+            "in": "path",
+            "description": "Object ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {}
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Object with the area id",
+            "content": {
+              "application/json": {}
+            }
+          }
+        },
+        "security": [
+          {
+            "openIdConnect": []
+          }
+        ]
+      }
+    },
+    "/shape/upload/wkt/{pid}": {
+      "post": {
+        "tags": [
+          "uploads"
+        ],
+        "summary": "Update an object with new WKT",
+        "operationId": "updateWKT",
+        "parameters": [
+          {
+            "name": "pid",
+            "in": "path",
+            "description": "Object ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {}
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Object with the area id",
+            "content": {
+              "application/json": {}
+            }
+          }
+        },
+        "security": [
+          {
+            "openIdConnect": []
+          }
+        ]
+      }
+    },
+    "/shape/upload/geojson": {
+      "post": {
+        "tags": [
+          "uploads"
+        ],
+        "summary": "Create an object from GeoJSON",
+        "operationId": "uploadGeoJSON",
+        "requestBody": {
+          "content": {
+            "application/json": {}
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Object with the area id",
+            "content": {
+              "application/json": {}
+            }
+          }
+        },
+        "security": [
+          {
+            "openIdConnect": []
+          }
+        ]
+      }
+    },
+    "/shape/upload/shp": {
+      "post": {
+        "tags": [
+          "uploads"
+        ],
+        "summary": "Upload a zipped shapefile and get a shapeId",
+        "operationId": "uploadShapefile",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "description": "searchable name for the area",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "description",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Uploaded zip file",
+          "content": {
+            "application/zip": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Object with the shapeId and a list of all features (areas)",
+            "content": {
+              "application/json": {}
+            }
+          }
+        },
+        "security": [
+          {
+            "openIdConnect": []
+          }
+        ]
+      }
+    },
+    "/shape/upload/wkt": {
+      "post": {
+        "tags": [
+          "uploads"
+        ],
+        "summary": "Create an object from WKT",
+        "operationId": "uploadWkt_1",
+        "requestBody": {
+          "content": {
+            "application/json": {}
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Object with the area id",
+            "content": {
+              "application/json": {}
+            }
+          }
+        },
+        "security": [
+          {
+            "openIdConnect": []
+          }
+        ]
+      }
+    },
+    "/shapes/wkt/{pid}": {
+      "get": {
+        "tags": [
+          "objects"
+        ],
+        "summary": "Get WKT for an object",
+        "operationId": "getWKT",
+        "parameters": [
+          {
+            "name": "pid",
+            "in": "path",
+            "description": "Object ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "WKT",
+            "content": {
+              "plain/text": {
+                "schema": {
+                  "$ref": "#/components/schemas/Distributions"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tabulation/list": {
+      "get": {
+        "tags": [
+          "tabulations"
+        ],
+        "summary": "List of field pairs with pre-generated tabulations",
+        "operationId": "listTabulations",
+        "responses": {
+          "200": {
+            "description": "List of tabulations",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/tabulation/data/{fid1}/{fid2}/tabulation.json": {
+      "get": {
+        "tags": [
+          "tabulations"
+        ],
+        "summary": "Get details of a field pair intersection",
+        "operationId": "showTabulation",
+        "parameters": [
+          {
+            "name": "fid1",
+            "in": "path",
+            "description": "Field ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fid2",
+            "in": "path",
+            "description": "Field ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "wkt",
+            "in": "query",
+            "description": "WKT to restrict the tabulated area",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Intersections as Tabulations",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/tabulation/single/{fid}/{pid}": {
+      "get": {
+        "tags": [
+          "tabulations"
+        ],
+        "summary": "Intersect a field with an area and return tabulated intersection information",
+        "operationId": "intersectTabulation",
+        "parameters": [
+          {
+            "name": "fid",
+            "in": "path",
+            "description": "Field ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pid",
+            "in": "path",
+            "description": "Object ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Intersections as Tabulations",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/tasks/cancel/{id}": {
+      "get": {
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Cancel a task",
+        "operationId": "cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Task ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task status",
+            "content": {
+              "application/json": {}
+            }
+          }
+        },
+        "security": [
+          {
+            "openIdConnect": []
+          }
+        ]
+      }
+    },
+    "/tasks/capabilities": {
+      "get": {
+        "tags": [
+          "tasks"
+        ],
+        "summary": "List of tasks and their inputs and outputs",
+        "operationId": "capabilities",
+        "responses": {
+          "200": {
+            "description": "List of tasks",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/tasks/create": {
+      "post": {
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Create a task with JSON body or query parameters",
+        "operationId": "create",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "description": "Task name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "inputs",
+            "in": "query",
+            "description": "task inputs as JSON",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task status",
+            "content": {
+              "application/json": {}
+            }
+          }
+        },
+        "security": [
+          {
+            "openIdConnect": []
+          }
+        ]
+      }
+    },
+    "/tasks/status/{id}": {
+      "get": {
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Task status",
+        "operationId": "status",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Task ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task status",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/tracks": {
+      "get": {
+        "tags": [
+          "tracks"
+        ],
+        "summary": "Get list of tracks",
+        "description": "Get a list of tracks",
+        "operationId": "getTracks",
+        "parameters": [
+          {
+            "name": "lsids",
+            "in": "query",
+            "description": "LSID to filter",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "geom_idx",
+            "in": "query",
+            "description": "Geometry index to filter",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "data_resource_uids",
+            "in": "query",
+            "description": "Data resource UIDs to filter",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "wkt",
+            "in": "query",
+            "description": "WKT or Object ID to filter",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pid",
+            "in": "query",
+            "description": "Object ID to filter",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "description": "Starting index for pagination",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Page size for pagination",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of tracks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Distributions"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tracks/lsids": {
+      "get": {
+        "tags": [
+          "tracks"
+        ],
+        "summary": "Get list of species level LSIDs that have a track",
+        "operationId": "getLsids_1",
+        "responses": {
+          "200": {
+            "description": "List of LSIDs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tracks/lsids/{lsid}": {
+      "get": {
+        "tags": [
+          "tracks"
+        ],
+        "summary": "Get tracks by LSID",
+        "operationId": "getTracksByLsid",
+        "parameters": [
+          {
+            "name": "lsid",
+            "in": "path",
+            "description": "LSID of the tracks",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "nowkt",
+            "in": "query",
+            "description": "true to exclude WKT from the response",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of tracks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Distributions"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/track/map/png/{imageId}": {
+      "get": {
+        "tags": [
+          "tracks"
+        ],
+        "summary": "Get image of track by id",
+        "operationId": "getTrackImageById",
+        "parameters": [
+          {
+            "name": "imageId",
+            "in": "path",
+            "description": "LSID of the track",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Overview image of the track in the Australian region",
+            "content": {
+              "image/png": {}
+            }
+          }
+        },
+        "deprecated": true
+      }
+    },
+    "/track/{id}": {
+      "get": {
+        "tags": [
+          "tracks"
+        ],
+        "summary": "Get a track by Id",
+        "operationId": "getTrackById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Id of the track",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "nowkt",
+            "in": "query",
+            "description": "true to exclude WKT from the response",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "track",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Distributions"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Distributions": {
+        "type": "object",
+        "properties": {
+          "gid": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "spcode": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "scientific": {
+            "type": "string"
+          },
+          "authority_": {
+            "type": "string"
+          },
+          "common_nam": {
+            "type": "string"
+          },
+          "family": {
+            "type": "string"
+          },
+          "genus_name": {
+            "type": "string"
+          },
+          "specific_n": {
+            "type": "string"
+          },
+          "min_depth": {
+            "type": "number",
+            "format": "double"
+          },
+          "max_depth": {
+            "type": "number",
+            "format": "double"
+          },
+          "pelagic_fl": {
+            "type": "number",
+            "format": "double"
+          },
+          "estuarine_fl": {
+            "type": "boolean"
+          },
+          "coastal_fl": {
+            "type": "boolean"
+          },
+          "desmersal_fl": {
+            "type": "boolean"
+          },
+          "metadata_u": {
+            "type": "string"
+          },
+          "wmsurl": {
+            "type": "string"
+          },
+          "lsid": {
+            "type": "string"
+          },
+          "family_lsid": {
+            "type": "string"
+          },
+          "genus_lsid": {
+            "type": "string"
+          },
+          "caab_species_number": {
+            "type": "string"
+          },
+          "caab_family_number": {
+            "type": "string"
+          },
+          "area_name": {
+            "type": "string"
+          },
+          "pid": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "checklist_name": {
+            "type": "string"
+          },
+          "area_km": {
+            "type": "number",
+            "format": "double"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "geom_idx": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "group_name": {
+            "type": "string"
+          },
+          "data_resource_uid": {
+            "type": "string"
+          },
+          "image_quality": {
+            "type": "string"
+          },
+          "endemic": {
+            "type": "boolean"
+          },
+          "genus_exemplar": {
+            "type": "string"
+          },
+          "family_exemplar": {
+            "type": "string"
+          },
+          "intersectArea": {
+            "type": "number",
+            "format": "double"
+          },
+          "imageUrl": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "Fields": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "desc": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "spid": {
+            "type": "string"
+          },
+          "sname": {
+            "type": "string"
+          },
+          "sdesc": {
+            "type": "string"
+          },
+          "indb": {
+            "type": "boolean"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "last_update": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "namesearch": {
+            "type": "boolean"
+          },
+          "defaultlayer": {
+            "type": "boolean"
+          },
+          "intersect": {
+            "type": "boolean"
+          },
+          "layerbranch": {
+            "type": "boolean"
+          },
+          "analysis": {
+            "type": "boolean"
+          },
+          "addtomap": {
+            "type": "boolean"
+          },
+          "requestedId": {
+            "type": "string"
+          },
+          "number_of_objects": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "layer": {
+            "$ref": "#/components/schemas/Layers"
+          },
+          "wms": {
+            "type": "string"
+          },
+          "objects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpatialObjects"
+            }
+          },
+          "layerId": {
+            "type": "object"
+          }
+        }
+      },
+      "Layers": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "uid": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "displayname": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "displaypath": {
+            "type": "string"
+          },
+          "scale": {
+            "type": "string"
+          },
+          "extents": {
+            "type": "string"
+          },
+          "minlatitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "minlongitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "maxlatitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "maxlongitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "environmentalvaluemin": {
+            "type": "string"
+          },
+          "environmentalvaluemax": {
+            "type": "string"
+          },
+          "environmentalvalueunits": {
+            "type": "string"
+          },
+          "lookuptablepath": {
+            "type": "string"
+          },
+          "metadatapath": {
+            "type": "string"
+          },
+          "classification1": {
+            "type": "string"
+          },
+          "classification2": {
+            "type": "string"
+          },
+          "mddatest": {
+            "type": "string"
+          },
+          "citation_date": {
+            "type": "string"
+          },
+          "datalang": {
+            "type": "string"
+          },
+          "mdhrlv": {
+            "type": "string"
+          },
+          "respparty_role": {
+            "type": "string"
+          },
+          "licence_level": {
+            "type": "string"
+          },
+          "licence_link": {
+            "type": "string"
+          },
+          "licence_notes": {
+            "type": "string"
+          },
+          "source_link": {
+            "type": "string"
+          },
+          "keywords": {
+            "type": "string"
+          },
+          "path_orig": {
+            "type": "string"
+          },
+          "path_1km": {
+            "type": "string"
+          },
+          "path_250m": {
+            "type": "string"
+          },
+          "domain": {
+            "type": "string"
+          },
+          "pid": {
+            "type": "string"
+          },
+          "dt_added": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Fields"
+            }
+          },
+          "requestedId": {
+            "type": "string"
+          }
+        }
+      },
+      "SpatialObjects": {
+        "type": "object",
+        "properties": {
+          "pid": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "fid": {
+            "type": "string"
+          },
+          "name_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bbox": {
+            "type": "string"
+          },
+          "area_km": {
+            "type": "number",
+            "format": "double"
+          },
+          "namesearch": {
+            "type": "boolean"
+          },
+          "degrees": {
+            "type": "number",
+            "format": "double"
+          },
+          "distance": {
+            "type": "number",
+            "format": "double"
+          },
+          "wmsurl": {
+            "type": "string"
+          },
+          "featureType": {
+            "type": "string"
+          },
+          "centroid": {
+            "type": "string"
+          },
+          "fieldname": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "Log": {
+        "type": "object",
+        "properties": {
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "category1": {
+            "type": "string"
+          },
+          "category2": {
+            "type": "string"
+          },
+          "data": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "openIdConnect": {
+        "type": "openIdConnect",
+        "openIdConnectUrl": "https://auth-test.ala.org.au/cas/oidc/.well-known"
+      },
+      "oauth": {
+        "type": "oauth2",
+        "flows": {
+          "clientCredentials": {
+            "tokenUrl": "https://auth.l-a.site/cas/oidc/token",
+            "refreshUrl": "https://auth.l-a.site/cas/oidc/refresh",
+            "scopes": {}
+          },
+          "authorizationCode": {
+            "authorizationUrl": "https://auth.l-a.site/cas/oidc/authorize",
+            "tokenUrl": "https://auth.l-a.site/cas/oidc/token",
+            "refreshUrl": "https://auth.l-a.site/cas/oidc/refresh",
+            "scopes": {}
+          }
+        }
+      }
+    }
+  }
+}

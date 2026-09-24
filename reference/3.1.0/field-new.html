@@ -1,0 +1,195 @@
+<form method="POST">
+                        <table class="table table-condensed">
+                            <tr><td class="col-md-2">
+                                <label for="name"
+                                       style="color:red">Name (default is layer display name) []:</label>
+                            </td><td class="col-md-1">
+                                <input class="form-control" type="text" id="name" name="name" value="MCP POC regions"
+                                       maxlength="256"/>
+                            </td></tr><tr><td>
+
+                            <label for="desc">Description []:</label></td><td>
+                            <input class="form-control" type="text" id="desc" name="desc" maxlength="256"
+                                   value=""/>
+                        </td></tr>
+                        <tr>
+                            <td>
+                                <label for="requestedId">requestedId (optional):</label>
+                            </td>
+                            <td>
+                                <input type="text" class="form-control" id="requestedId" name="requestedId"
+                                   value="" readonly
+                                   maxlength="15"/>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                            <label for="type"
+                                   style="color:red">[TODO make this work) Type (only for using an Environmental to a Contextual from gridfile when the appropriate textfile is available):</label>
+                            </td>
+                            <td>
+                                <select class="form-control" id="type" name="type">
+                                    <option value="c"
+                                            selected>Contextual from shapefile
+                                    </option>
+                                    <option value="a"
+                                            >Contextual from gridfile (creates types 'a' - classes and
+                                    'b' - individual shapes)
+                                    </option>
+                                    <option value="e"
+                                            >Environmental
+                                    </option>
+                                </select>
+                            </td>
+                        </tr>
+
+                        
+                            <tr>
+                                <td>
+                                    <label for="sname"
+                                           style="color:red">Source name (contextual only; column names with optional formatting for the name for each unique
+                                    Objects, e.g. "name (state)"</label>
+                                </td>
+                                <td>
+                                    <select class="form-control" id="sname" name="sname">
+                                        <option value=""
+                                                selected>(none)
+                                        </option>
+                                        
+                                            
+                                                <option value="NAME"
+                                                         >NAME</option>
+                                            
+                                        
+                                            
+                                                <option value="CODE"
+                                                         >CODE</option>
+                                            
+                                        
+                                            
+                                        
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <label for="sdesc">Source description (contextual only; column names with optional formatting for the description
+                                    for each unique Objects, e.g. "state (area_km)"</label>
+                                </td>
+                                <td>
+                                    <!--input type="text" id="sdesc" name="sdesc" value="" maxlength="256"/-->
+                                    <select class="form-control" id="sdesc" name="sdesc">
+                                        <option value=""
+                                                selected>(none)
+                                        </option>
+                                        
+                                            
+                                                <option value="NAME"
+                                                        >NAME</option>
+                                            
+                                        
+                                            
+                                                <option value="CODE"
+                                                        >CODE</option>
+                                            
+                                        
+                                            
+                                        
+                                    </select>
+                                </td>
+                            </tr>
+                        
+                        <tr>
+                            <td>
+                              <label for="indb">This field is intended for inclusion in biocache (SOLR index)</label>
+                            </td>
+                            <td>
+                            <input class="form-control" type="checkbox" id="indb" name="indb"
+                                   checked/>
+                            </td>
+                        </tr>
+                        
+                            <tr>
+                                <td>
+
+                                        <label for="namesearch">This field's objects are included in the objects search (gaz autocomplete). (Contextual
+                                        only)</label>
+                                </td>
+                                <td>
+                                    <input class="form-control" type="checkbox" id="namesearch" name="namesearch"  checked
+                                    />
+                                </td>
+                            </tr>
+                        
+                        <tr>
+                            <td>
+                            <label for="defaultlayer">When more than ONE field is created from a source layer, use the 'defaultlayer' for
+                            intersection requests</label>
+                            </td>
+                            <td>
+                            <input class="form-control" type="checkbox" id="defaultlayer" name="defaultlayer"
+                                   checked/>
+                             </td>
+                        </tr>
+                        
+                            <tr>
+                                <td>
+                                    <label for="intersect">Include this Field in calculated Tabulations (Contextual only)</label>
+                                </td>
+                                <td>
+                                     <input class="form-control" type="checkbox" id="intersect" name="intersect"
+                                          />
+                                 </td>
+                            </tr>
+                        
+
+                        
+                            <tr>
+                                <td>
+                                 <label for="layerbranch">Used by Spatial Portal. When Contextual Layers are listed by their Classifications in a
+                            tree structure, list objects in the layer as individual leaves in the tree. (Contextual only and
+                            defaultlayer=true) [classification= > ]</label>
+                                </td>
+                                <td>
+                                <input class="form-control" type="checkbox" id="layerbranch" name="layerbranch"
+                                       />
+                                </td>
+                            </tr>
+                        
+                        <tr>
+                            <td>
+                            <label for="analysis">This field is available in the Spatial Portal Tool lists</label>
+                            </td>
+                            <td>
+                            <input class="form-control" type="checkbox" id="analysis" name="analysis"
+                                   />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <label for="addtomap">This field is available in the Spatial Portal Add To Map list</label>
+                            </td>
+                            <td>
+                                <input class="form-control" type="checkbox" id="addtomap" name="addtomap"
+                                   />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <label for="enabled">Enabled (makes the field available for use, disable to remove field from use)</label>
+                            </td>
+                            <td>
+                                <input class="form-control" type="checkbox" id="enabled" name="enabled"
+                                   />
+                            </td>
+                        </tr>
+                    </table>
+                    
+                        <input type="submit" class="btn btn-default"
+                               value='Create Field'/>
+                    
+
+                    <input type="hidden" name="raw_id" value=""/>
+
+                    <input type="hidden" name="id" value="1234"/>
+                </form>

@@ -1,0 +1,80 @@
+// POC CI for spatial-mcp on jenkins.gbif.es.
+// Runs the unit tests, then the integration tests against the LA demo stack (spatial.l-a.site) that the
+// la-docker-compose-tests job deploys. It never deploys or cleans anything itself, and it waits while
+// la-docker-compose-tests is running (that job wipes /data and redeploys the stack).
+// Admin credentials are read from the lademo inventory on the agent, like la-docker-compose-tests' E2E
+// stage does, and are never echoed.
+pipeline {
+    agent any
+    tools { nodejs 'node-22' }
+    options {
+        disableConcurrentBuilds()
+        timestamps()
+        timeout(time: 90, unit: 'MINUTES')
+    }
+    triggers { cron('H 5 * * *') }
+    parameters {
+        string(name: 'SPATIAL_TEST_URL', defaultValue: 'https://spatial.l-a.site/ws', description: 'spatial-service under test (base URL including /ws)')
+        string(name: 'OIDC_ISSUER', defaultValue: 'https://auth.l-a.site/cas/oidc', description: 'OIDC issuer of that stack')
+        string(name: 'INVENTORY_DIR', defaultValue: '${HOME}/ala-install-docker-tests/lademo/lademo-inventories', description: 'lademo inventory with lademo-local-passwords.ini')
+        booleanParam(name: 'RUN_WRITE_TESTS', defaultValue: true, description: 'Create and delete an mcp_poc_* layer on the stack (needs the admin credentials of the inventory)')
+    }
+    stages {
+        stage('Unit tests') {
+            steps {
+                sh 'npm ci'
+                sh 'npm run typecheck'
+                sh 'mkdir -p test-results'
+                sh 'node --import tsx --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=test-results/unit.xml test/*.test.ts'
+            }
+        }
+        stage('Wait for lademo') {
+            steps {
+                script {
+                    // Do not run while the stack is being wiped/redeployed.
+                    timeout(time: 60, unit: 'MINUTES') {
+                        waitUntil(initialRecurrencePeriod: 60000) {
+                            def building = sh(returnStdout: true, script: '''
+                                curl -fsS -g "${JENKINS_URL}job/la-docker-compose-tests/lastBuild/api/json?tree=building" 2>/dev/null | grep -o '"building":[a-z]*' || echo unknown
+                            ''').trim()
+                            if (building == 'unknown') { echo 'Cannot read la-docker-compose-tests status (no anonymous read?); continuing'; return true }
+                            if (building.endsWith('true')) { echo 'la-docker-compose-tests is running; waiting'; return false }
+                            return true
+                        }
+                    }
+                    sh 'curl -fsS -o /dev/null -w "spatial-service: %{http_code}\\n" "${SPATIAL_TEST_URL}/fields"'
+                }
+            }
+        }
+        stage('Integration tests') {
+            steps {
+                sh '''
+                    set -eu
+                    set +x
+                    export SPATIAL_TEST_URL="${SPATIAL_TEST_URL}"
+                    INV=$(eval echo "${INVENTORY_DIR}")
+                    PW="$INV/lademo-local-passwords.ini"
+                    if [ "${RUN_WRITE_TESTS}" = "true" ] && [ -f "$PW" ]; then
+                        val() { sed -nE "s/^[[:space:]]*$1[[:space:]]*=[[:space:]]*([^[:space:]]+).*/\\1/p" "$PW" | head -1; }
+                        export SPATIAL_OIDC_ISSUER="${OIDC_ISSUER}"
+                        export SPATIAL_OIDC_CLIENT_ID="$(val spatial_client_id)"
+                        export SPATIAL_OIDC_CLIENT_SECRET="$(val spatial_client_secret)"
+                        export SPATIAL_OIDC_USERNAME="$(val cas_first_admin_email)"
+                        export SPATIAL_OIDC_PASSWORD="$(sed -nE 's/.*random password:[[:space:]]*([^[:space:]]+).*/\\1/p' "$PW" | head -1)"
+                        export SPATIAL_API_KEY="$(val spatial_service_service_key)"
+                        echo "admin credentials: from $PW (user $SPATIAL_OIDC_USERNAME)"
+                    else
+                        echo "no admin credentials: only public/anonymous integration tests run"
+                    fi
+                    mkdir -p test-results
+                    node --import tsx --test --test-concurrency=1 --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=test-results/integration.xml test/integration/*.test.ts
+                '''
+            }
+        }
+    }
+    post {
+        always {
+            junit allowEmptyResults: true, testResults: 'test-results/*.xml'
+        }
+    }
+}
