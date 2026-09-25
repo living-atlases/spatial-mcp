@@ -1,7 +1,7 @@
 # spatial-mcp
 
-> **Experimental proof of concept.** This is not production software and it is not an ALA or Living Atlases
-> product. Try it on a test portal first (for example the LA demo, spatial.l-a.site), never directly on production.
+> **Experimental proof of concept.** This is not production software and it is not an ALA
+> Try it on a test portal first (for example the LA demo, spatial.l-a.site), never directly on production.
 
 spatial-mcp lets you administer a Living Atlases **Spatial Portal** by talking to an AI assistant (Claude, or any
 [MCP](https://modelcontextprotocol.io) client) instead of clicking through the spatial-service admin pages.
