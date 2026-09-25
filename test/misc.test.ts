@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { describe, test } from "node:test";
 import { evaluate, renderGspForm } from "../scripts/render-gsp.mjs";
 import { loadConfig, secretsOf } from "../src/config.ts";
 import { Redactor } from "../src/redact.ts";
-import { htmlTable } from "../src/spatial-client.ts";
+import { htmlTable, withNetworkRetry } from "../src/spatial-client.ts";
 import { summarizeTask } from "../src/task-outcome.ts";
 
 test("task verdicts follow Task.groovy (0 queued .. 4 finished) and the log is ordered", () => {
@@ -42,4 +42,36 @@ test("the GSP renderer understands the expressions the manageLayers views use", 
 test("admin list pages are read from their HTML table", () => {
   const rows = htmlTable("<table><thead><tr><th>Id</th><th>Name</th><th></th></tr></thead><tbody><tr><td> 12 </td><td>comarcas\n x</td><td><a>Edit</a></td></tr><tr><td></td></tr></tbody></table>");
   assert.deepEqual(rows, [{ Id: "12", Name: "comarcas x", col2: "Edit" }]);
+});
+
+describe("withNetworkRetry", () => {
+  const reset = () => Object.assign(new TypeError("fetch failed"), { cause: { code: "ECONNRESET", message: "socket hang up" } });
+
+  test("a GET is retried once after a connection-level failure", async () => {
+    let calls = 0;
+    const f = withNetworkRetry(async () => (++calls === 1 ? Promise.reject(reset()) : new Response("ok")));
+    assert.equal(await (await f("https://s.test/ws/layers")).text(), "ok");
+    assert.equal(calls, 2);
+  });
+
+  test("a second failure names the cause and the URL", async () => {
+    const f = withNetworkRetry(async () => Promise.reject(reset()));
+    await assert.rejects(f("https://s.test/ws/layers?x=1"), /fetch failed for https:\/\/s\.test\/ws\/layers: ECONNRESET socket hang up/);
+  });
+
+  test("a POST is never retried", async () => {
+    let calls = 0;
+    const f = withNetworkRetry(async () => { calls++; return Promise.reject(reset()); });
+    await assert.rejects(f("https://s.test/ws/manageLayers/upload", { method: "POST" }), /ECONNRESET/);
+    assert.equal(calls, 1);
+  });
+
+  test("HTTP errors and timeouts are passed through untouched", async () => {
+    let calls = 0;
+    const f = withNetworkRetry(async () => { calls++; return new Response("no", { status: 502 }); });
+    assert.equal((await f("https://s.test/ws/layers")).status, 502);
+    assert.equal(calls, 1);
+    const t = withNetworkRetry(async () => Promise.reject(new DOMException("timed out", "TimeoutError")));
+    await assert.rejects(t("https://s.test/ws/layers"), /timed out/);
+  });
 });

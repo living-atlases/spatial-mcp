@@ -17,6 +17,30 @@ export class SpatialError extends Error {
 
 type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
+/**
+ * Node's fetch reports every connection-level failure as a bare "fetch failed" and keeps the reason
+ * (ECONNRESET, ETIMEDOUT, a TLS error…) in err.cause, which callers then drop. Name the cause, and retry a
+ * GET once on such an error: a reset connection says nothing about the request, while a real answer from
+ * spatial-service (any HTTP status) or a timeout is never retried. Nothing that changes data is retried.
+ */
+export function withNetworkRetry(f: FetchLike, retries = 1): FetchLike {
+  return async (input, init) => {
+    const method = (init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await f(input instanceof Request ? input.clone() : input, init);
+      } catch (e) {
+        const network = e instanceof TypeError && e.message === "fetch failed";
+        if (network && method === "GET" && attempt < retries) continue;
+        if (!network) throw e;
+        const c = (e as { cause?: { code?: string; message?: string } }).cause;
+        const url = input instanceof Request ? input.url : String(input);
+        throw new Error(`fetch failed for ${new URL(url).origin}${new URL(url).pathname}${c ? `: ${c.code ?? ""}${c.code && c.message ? " " : ""}${c.message ?? ""}` : ""}`, { cause: e });
+      }
+    }
+  };
+}
+
 export interface ClientOptions {
   auth?: Auth;
   /** Used for /tasks/create and /tasks/cancel when there is no user token. */
@@ -47,7 +71,7 @@ export class SpatialClient {
     private readonly opts: ClientOptions = {},
   ) {
     this.auth = opts.auth ?? noAuth;
-    this.fetchImpl = opts.fetch ?? fetch;
+    this.fetchImpl = withNetworkRetry(opts.fetch ?? fetch);
     this.timeoutMs = opts.timeoutMs ?? 300_000;
     this.api = createClient<paths>({ baseUrl, fetch: (req: Request) => this.fetchImpl(req) });
     this.api.use({
