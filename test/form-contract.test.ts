@@ -78,6 +78,12 @@ test("field form: sname must be one of the DBF columns of the upload", () => {
   assert.throws(() => buildSubmission(f, { sname: "POPULATION" }), /must be one of/);
 });
 
+test("field form: layerbranch is sent only when checked", () => {
+  const f = parseForm(ref("field-new.html"));
+  assert.equal(Object.fromEntries(buildSubmission(f, { layerbranch: true }).body)["layerbranch"], "on");
+  assert.ok(!buildSubmission(f, { layerbranch: false }).body.some(([k]) => k === "layerbranch"));
+});
+
 test("signature ignores data-driven options but catches structural drift", () => {
   const a = signature(parseForm(ref("field-new.html")));
   const other = ref("field-new.html").replace(/<option value="CODE"[\s\S]*?<\/option>/, "");

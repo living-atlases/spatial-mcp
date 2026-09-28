@@ -46,6 +46,7 @@ export interface FieldInput {
   indb?: boolean;
   namesearch?: boolean;
   defaultlayer?: boolean;
+  layerbranch?: boolean;
   intersect?: boolean;
   [k: string]: FormValue;
 }

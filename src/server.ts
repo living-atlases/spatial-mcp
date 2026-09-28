@@ -99,10 +99,11 @@ export function createServer(deps: ServerDeps): McpServer {
     namesearch: z.boolean().optional().describe("Objects searchable in the gazetteer"),
     intersect: z.boolean().optional().describe("Include in tabulations"),
     defaultlayer: z.boolean().optional(),
+    layerbranch: z.boolean().optional().describe("Contextual with defaultlayer: list the objects as leaves of the layer tree"),
   };
   const toField = (a: Record<string, unknown>): FieldInput => {
-    const { fieldName, sname, sdesc, desc, indb, namesearch, intersect, defaultlayer } = a as FieldInput & { fieldName?: string };
-    return { name: fieldName, sname, sdesc, desc, indb, namesearch, intersect, defaultlayer };
+    const { fieldName, sname, sdesc, desc, indb, namesearch, intersect, defaultlayer, layerbranch } = a as FieldInput & { fieldName?: string };
+    return { name: fieldName, sname, sdesc, desc, indb, namesearch, intersect, defaultlayer, layerbranch };
   };
   const toLayer = (a: Record<string, unknown>): LayerInput => Object.fromEntries(Object.keys(layerShape).map((k) => [k, a[k] as string | undefined])) as LayerInput;
 
