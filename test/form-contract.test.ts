@@ -42,6 +42,12 @@ test("builds exactly what the browser would post, with the form's defaults", () 
   assert.deepEqual(Object.keys(s.changes).sort(), ["classification1", "displayname", "licence_level"]);
 });
 
+test("a new layer can be created with a requested id", () => {
+  const s = buildSubmission(parseForm(ref("layer-new.html")), { name: "enp", requestedId: "10004" });
+  assert.equal(Object.fromEntries(s.body)["requestedId"], "10004");
+  assert.throws(() => buildSubmission(parseForm(ref("layer-new.html")), { requestedId: "1".repeat(16) }), /at most 15/);
+});
+
 test("unchecked checkboxes are omitted, like a browser does", () => {
   const f = parseForm(ref("layer-new.html"));
   const s = buildSubmission(f, { enabled: false });

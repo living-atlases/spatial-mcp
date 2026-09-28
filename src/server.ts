@@ -73,6 +73,7 @@ export function createServer(deps: ServerDeps): McpServer {
 
   const layerShape = {
     name: z.string().describe("Internal name: lowercase a-z, 0-9, _ (max 150, cannot be changed later)"),
+    requestedId: z.string().regex(/^\d{1,15}$/).optional().describe("Numeric layer id to use instead of the next one, e.g. to recreate a layer keeping its id; its first contextual field is then cl<requestedId>"),
     displayname: z.string().optional().describe("Name shown in the portal"),
     description: z.string().optional(),
     type: z.enum(["Contextual", "Environmental"]).optional().describe("Default: what the upload is (shapefile: Contextual, grid: Environmental)"),

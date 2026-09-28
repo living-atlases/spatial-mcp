@@ -18,6 +18,7 @@ export const referenceForms = {
 
 export interface LayerInput {
   name: string;
+  requestedId?: string;
   displayname?: string;
   description?: string;
   type?: "Contextual" | "Environmental";
