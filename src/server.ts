@@ -127,11 +127,12 @@ export function createServer(deps: ServerDeps): McpServer {
   };
   /** spatial-service before 3.0 hands GeoServer the .bil path of a raster upload, so it is never published (fixed upstream in a67c8dd). */
   const rasterBugNote = (version: string, uploadId: string) =>
-    `spatial-service ${version} does not publish raster uploads to GeoServer (fixed in 3.x), so the layer form fails with a 500. ` +
-    `Workaround: include a GeoTIFF with the same name in the zip, then on the server publish it by hand, e.g. ` +
-    `curl -u admin -X PUT -H 'Content-type: text/plain' -d 'file:///data/spatial-data/uploads/${uploadId}/${uploadId}.tif' ` +
-    `'<geoserver>/rest/workspaces/ALA/coveragestores/${uploadId}/external.geotiff?configure=first' ` +
-    `(move ${uploadId}.prj aside while doing it), and retry spatial_create_layer.`;
+    `spatial-service ${version} cannot turn a raster upload into a layer by itself (fixed in 3.x): it never publishes it ` +
+    `to GeoServer, and the layer form then fails with a 500 (getMinMax also calls an unimported Bil2diva unless ` +
+    `<upload>.grd exists). Workaround: ship in the zip, with the same base name, the .bil/.hdr/.prj plus a GeoTIFF (.tif) ` +
+    `and the DIVA .grd/.gri (the .gri is a copy of the .bil; the .grd is the header Bil2diva writes, with MinValue/MaxValue); ` +
+    `then create the coverage store as a GeoServer admin: PUT ${config.geoserverUrl}/rest/workspaces/ALA/coveragestores/${uploadId}/external.geotiff?configure=first ` +
+    `with body file://<spatial-service data dir>/uploads/${uploadId}/${uploadId}.tif (Content-type: text/plain), and retry spatial_create_layer {uploadId: "${uploadId}"}.`;
 
   tool("spatial_health", "read", "Which spatial-service this server talks to, its version, whether the credentials work (admin endpoints), and drift against the reference version", {}, async () => {
     const out: Record<string, unknown> = { url: client.baseUrl, referenceVersion: REFERENCE_VERSION, readonly: config.readonly };
