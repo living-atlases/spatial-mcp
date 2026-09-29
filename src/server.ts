@@ -88,6 +88,10 @@ export function createServer(deps: ServerDeps): McpServer {
     metadatapath: z.string().optional(),
     keywords: z.string().optional(),
     notes: z.string().optional(),
+    mddatest: z.string().optional().describe('Metadata date, e.g. "2011-08-23"'),
+    citation_date: z.string().optional().describe('Citation date, e.g. "2011-08-23"'),
+    datalang: z.string().optional().describe('Data language, e.g. "eng"'),
+    respparty_role: z.string().optional().describe('Responsible party role, e.g. "Author"'),
     environmentalvalueunits: z.string().optional().describe("Environmental layers only, e.g. degrees C"),
   };
   const fieldShape = {

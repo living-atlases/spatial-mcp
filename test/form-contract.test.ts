@@ -48,6 +48,12 @@ test("a new layer can be created with a requested id", () => {
   assert.throws(() => buildSubmission(parseForm(ref("layer-new.html")), { requestedId: "1".repeat(16) }), /at most 15/);
 });
 
+test("layer metadata dates and language are form fields", () => {
+  const body = Object.fromEntries(buildSubmission(parseForm(ref("layer-new.html")), { mddatest: "2019-07-01", citation_date: "2020-11-03", datalang: "spa", respparty_role: "Author" }).body);
+  assert.deepEqual([body["mddatest"], body["citation_date"], body["datalang"], body["respparty_role"]], ["2019-07-01", "2020-11-03", "spa", "Author"]);
+  assert.throws(() => buildSubmission(parseForm(ref("layer-new.html")), { datalang: "spanish" }), /at most 5/);
+});
+
 test("unchecked checkboxes are omitted, like a browser does", () => {
   const f = parseForm(ref("layer-new.html"));
   const s = buildSubmission(f, { enabled: false });
