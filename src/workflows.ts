@@ -159,16 +159,21 @@ export class Workflows {
     const ids = [...fieldTasks, ...(after.task ?? [])].filter((t) => ["FieldCreation", "StandardizeLayers"].includes(t.name) && t.status < 2).map((t) => t.id).filter((id, i, a) => a.indexOf(id) === i);
     const waited = ids.length ? await this.waitTasks(ids) : [];
     const done = waited.length > 0 && waited.every((t) => t.verdict === "success");
-    if (done) await this.client.reloadIntersectConfig().catch(() => undefined);
+    let reloadError: string | undefined;
+    if (done) await this.client.reloadIntersectConfig().catch((e: Error) => { reloadError = e.message; });
+    const reloaded = done && reloadError === undefined;
     return {
       layerId,
       fieldIds,
       sent: sub.changes,
       tasks: waited,
-      intersectConfigReloaded: done,
-      next: done
-        ? `check it: spatial_verify_layer {layerId: "${layerId}", fieldId: "${fieldIds[0] ?? "?"}"}`
-        : `FieldCreation is still running: poll spatial_task_status, then spatial_reload_intersect_config and spatial_verify_layer`,
+      intersectConfigReloaded: reloaded,
+      ...(reloadError ? { intersectConfigReloadError: reloadError } : {}),
+      next: !done
+        ? `FieldCreation is still running: poll spatial_task_status, then spatial_reload_intersect_config and spatial_verify_layer`
+        : reloadError
+          ? `the field exists but the intersect config was not reloaded (${reloadError}); set SPATIAL_API_KEY or restart spatial-service, then spatial_verify_layer {layerId: "${layerId}", fieldId: "${fieldIds[0] ?? "?"}"}`
+          : `check it: spatial_verify_layer {layerId: "${layerId}", fieldId: "${fieldIds[0] ?? "?"}"}`,
     };
   }
 

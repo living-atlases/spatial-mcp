@@ -176,7 +176,15 @@ export function createServer(deps: ServerDeps): McpServer {
   // ---------------- tasks ----------------
 
   tool("spatial_task_status", "read", "Status (queued/running/success/failed/cancelled), message and the last log lines of a task", { id: z.number().int() }, async ({ id }) => summarizeTask((await client.taskStatus(id)) as never));
-  tool("spatial_list_tasks", "read", "Recent tasks (admin): filter by text or status (0 queued, 1 running, 2 cancelled, 3 failed, 4 finished)", { q: z.string().optional(), status: z.number().int().min(0).max(4).optional(), max: z.number().int().default(20) }, async (a) => client.tasksAll(a));
+  tool("spatial_list_tasks", "read", "Recent tasks (admin): filter by text or status (0 queued, 1 running, 2 cancelled, 3 failed, 4 finished)", { q: z.string().optional(), status: z.number().int().min(0).max(4).optional(), max: z.number().int().default(20) }, async (a) => {
+    try {
+      return await client.tasksAll(a);
+    } catch (e) {
+      // spatial-service 2.x renders /tasks/all as a GSP page only, even with .json
+      if (/expected JSON/.test((e as Error).message)) throw new Error(`this spatial-service does not list tasks as JSON (2.x serves /tasks/all as an HTML page only): use spatial_layer_admin {id} to see the tasks of a layer or upload, or spatial_task_status {id}`);
+      throw e;
+    }
+  });
   tool("spatial_run_task", "write", "Run a task via /tasks/create: a user analysis (AreaReport, AooEoo, PointsToGrid…) or, for admins, a maintenance process (Thumbnails, TabulationCreate, LayerDistancesCreate, StandardizeLayers…). See spatial_capabilities for names and inputs", { name: z.string(), input: z.record(z.unknown()).default({}), dryRun, confirm }, async (a) => {
     const caps = await client.capabilities().catch(() => ({}) as Record<string, never>);
     const spec = (caps as Record<string, { input?: Record<string, { type?: string; constraints?: { optional?: boolean } }> }>)[a.name];

@@ -255,3 +255,30 @@ test("an Environmental layer previews its field as type e", async () => {
   assert.equal(dry.json.warning, undefined, "the fake server is 3.1.0: no raster warning");
   await c.close();
 });
+
+test("the intersect reload sends the serviceKey (spatial-service marks it @RequireApiKey)", async () => {
+  const keyed = await startFakeSpatial({ reloadNeedsApiKey: true });
+  const c = await connect({ token: keyed.adminToken, fakeServer: keyed });
+  try {
+    const r = await c.call("spatial_add_layer", { path: zipPath, name: "mcp_poc_keyed", sname: "NAME", dryRun: false, confirm: true });
+    assert.equal(r.isError, false, r.text);
+    assert.equal(r.json.intersectConfigReloaded, true, r.text);
+    assert.equal(r.json.intersectConfigReloadError, undefined);
+  } finally {
+    await c.close();
+    await keyed.close();
+  }
+});
+
+test("spatial-service 2.x task list (HTML only) gets a pointer to the per-layer task views", async () => {
+  const old = await startFakeSpatial({ tasksAllHtml: true });
+  const c = await connect({ token: old.adminToken, fakeServer: old });
+  try {
+    const r = await c.call("spatial_list_tasks", {});
+    assert.equal(r.isError, true);
+    assert.match(r.text, /spatial_layer_admin/);
+  } finally {
+    await c.close();
+    await old.close();
+  }
+});

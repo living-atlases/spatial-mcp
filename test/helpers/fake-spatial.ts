@@ -26,7 +26,7 @@ const layerGsp = readFileSync(join(REF, "layer.gsp"), "utf8");
 const fieldGsp = readFileSync(join(REF, "field.gsp"), "utf8");
 const page = (form: string) => `<!DOCTYPE html><html><body><div class="container">${form}</div></body></html>`;
 
-export async function startFakeSpatial(opts: { adminToken?: string; failTask?: string; formHtml?: (kind: string, html: string) => string; bearerOnAdminPages?: boolean } = {}) {
+export async function startFakeSpatial(opts: { adminToken?: string; failTask?: string; formHtml?: (kind: string, html: string) => string; bearerOnAdminPages?: boolean; reloadNeedsApiKey?: boolean; tasksAllHtml?: boolean } = {}) {
   const adminToken = opts.adminToken ?? "admin-token";
   const login = { username: "admin@example.org", password: "s3cret-pw" };
   const state: FakeState = { uploads: new Map(), layers: new Map(), fields: new Map(), tasks: new Map(), posts: [], requests: [] };
@@ -89,7 +89,11 @@ export async function startFakeSpatial(opts: { adminToken?: string; failTask?: s
     if (p.startsWith("/objects/")) return state.fields.has(p.split("/")[2]!) ? json(200, [{ pid: "501", name: "Norte" }, { pid: "502", name: "Centro" }]) : json(200, []);
     if (p.startsWith("/object/")) return json(200, { pid: p.split("/")[2], name: "Norte" });
     if (p.startsWith("/shapes/kml/")) return res.writeHead(200, { "Content-Type": "application/vnd.google-earth.kml+xml" }).end("<kml><Placemark/></kml>");
-    if (p.startsWith("/intersect/reloadconfig")) return isAdmin ? res.writeHead(200).end("reloaded") : json(401, { error: "login required" });
+    if (p.startsWith("/intersect/reloadconfig")) {
+      const ok = opts.reloadNeedsApiKey ? req.headers["apikey"] === "service-key" : isAdmin;
+      return ok ? res.writeHead(200).end("reloaded") : json(401, { error: "Unauthorized" });
+    }
+    if (opts.tasksAllHtml && p.startsWith("/tasks/all")) return res.writeHead(200, { "Content-Type": "text/html" }).end("<!DOCTYPE html><html></html>");
     if (p.startsWith("/intersect/")) return json(200, [{ field: p.split("/")[2], value: "Norte" }]);
     if (p === "/tasks/capabilities") return json(200, { AreaReport: { description: "Area Report - PDF", private: { isPublic: true }, input: { layersServiceUrl: { type: "auto" }, area: { type: "area", constraints: { min: 1 } }, ignoredPages: { type: "list", constraints: { optional: true } } } } });
     if (p.startsWith("/tasks/status/")) {

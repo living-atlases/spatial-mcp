@@ -103,7 +103,8 @@ export class SpatialClient {
   search = (q: string, limit = 20) => this.ok<unknown[]>("/search", this.api.GET("/search", { params: { query: { q, limit } } }));
   capabilities = () => this.ok<Record<string, Capability>>("/tasks/capabilities", this.api.GET("/tasks/capabilities"));
   taskStatus = (id: string | number) => this.ok<Record<string, unknown>>(`/tasks/status/${id}`, this.api.GET("/tasks/status/{id}", { params: { path: { id: String(id) } } }));
-  reloadIntersectConfig = () => this.text("/intersect/reloadconfig", { user: true });
+  /** @RequireApiKey on 2.x (and 3.x): the admin session alone gets a 401 there, so the serviceKey is sent too when configured. */
+  reloadIntersectConfig = () => this.text("/intersect/reloadconfig", { user: true, apiKey: "always" });
   shapeKml = (pid: string) => this.text(`/shapes/kml/${pid}`);
 
   /**
@@ -193,12 +194,13 @@ export class SpatialClient {
 
   // ---------- plumbing ----------
 
-  async raw(path: string, o: { method?: string; json?: unknown; body?: BodyInit; user?: boolean; apiKey?: boolean; accept?: string } = {}): Promise<Response> {
+  async raw(path: string, o: { method?: string; json?: unknown; body?: BodyInit; user?: boolean; apiKey?: boolean | "always"; accept?: string } = {}): Promise<Response> {
     const url = this.baseUrl + path;
     const send = async () => {
       const headers: Record<string, string> = { Accept: o.accept ?? "application/json" };
       if (o.user) Object.assign(headers, await this.auth.headers());
-      if (o.apiKey && this.opts.apiKey && !headers["Authorization"]) headers["apiKey"] = this.opts.apiKey;
+      // "always": endpoints that only accept the serviceKey (@RequireApiKey), whatever user credentials go along
+      if (o.apiKey && this.opts.apiKey && (o.apiKey === "always" || !headers["Authorization"])) headers["apiKey"] = this.opts.apiKey;
       const cookie = o.user ? this.opts.session?.cookieFor(url) : undefined;
       if (cookie) headers["Cookie"] = cookie;
       let body = o.body;
