@@ -17,6 +17,7 @@ export function clientFor(config: Config): SpatialClient {
   return new SpatialClient(config.url, {
     auth: authFor(config),
     apiKey: config.apiKey,
+    timeoutMs: config.timeoutMs,
     session: config.login ? new WebSession(config.login.username, config.login.password) : undefined,
   });
 }

@@ -15,6 +15,7 @@
  *   SPATIAL_API_KEY                       spatial-service serviceKey / API key (only /tasks/create and /tasks/cancel)
  *   SPATIAL_ALLOWED_DIRS                  ":"-separated directories layer zips may be read from
  *   SPATIAL_POLL_WAIT_MS                  how long a write waits for its tasks before handing back (default 20000)
+ *   SPATIAL_TIMEOUT_MS                    per-request HTTP timeout, raise it for large layer uploads (default 300000)
  *   PORT / HOST                           HTTP transport only (default 127.0.0.1:3920)
  */
 export interface OidcConfig {
@@ -37,6 +38,7 @@ export interface Config {
   /** Admin account for the browser-like session the admin pages need. */
   login?: { username: string; password: string };
   pollWaitMs: number;
+  timeoutMs?: number;
 }
 
 export function loadConfig(argv: string[] = process.argv.slice(2), env: NodeJS.ProcessEnv = process.env): Config {
@@ -68,6 +70,7 @@ export function loadConfig(argv: string[] = process.argv.slice(2), env: NodeJS.P
     apiKey: env["SPATIAL_API_KEY"] || undefined,
     login: loginFrom(env),
     pollWaitMs: Number(env["SPATIAL_POLL_WAIT_MS"] ?? 20000),
+    timeoutMs: env["SPATIAL_TIMEOUT_MS"] ? Number(env["SPATIAL_TIMEOUT_MS"]) : undefined,
   };
 }
 

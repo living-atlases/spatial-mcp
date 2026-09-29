@@ -30,6 +30,11 @@ test("config: flags win over env, OIDC needs an issuer or a token URL", () => {
   assert.throws(() => loadConfig([], { SPATIAL_OIDC_CLIENT_ID: "x" }), /ISSUER/);
 });
 
+test("SPATIAL_TIMEOUT_MS sets the HTTP timeout, unset keeps the client default", () => {
+  assert.equal(loadConfig([], { SPATIAL_TIMEOUT_MS: "1800000" }).timeoutMs, 1_800_000);
+  assert.equal(loadConfig([], {}).timeoutMs, undefined);
+});
+
 test("the GSP renderer understands the expressions the manageLayers views use", () => {
   assert.equal(evaluate("layer_creation != null || has_layer", { has_layer: true }), true);
   assert.equal(evaluate("layer_creation == null && !has_layer", {}), true);
