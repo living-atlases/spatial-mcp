@@ -73,7 +73,7 @@ export function parseForm(html: string): FormField[] {
 
 /**
  * Validate `input` against the form and build the body a browser would post.
- * Fail closed: any key the form does not have, any readonly change, any value too long or not among the
+ * Fail closed: any key the form does not have (except `false` for a checkbox it lacks), any readonly change, any value too long or not among the
  * options is an error, and nothing is sent.
  */
 export function buildSubmission(fields: FormField[], input: Record<string, FormValue>): Submission {
@@ -81,6 +81,8 @@ export function buildSubmission(fields: FormField[], input: Record<string, FormV
   const problems: string[] = [];
   for (const key of Object.keys(input)) {
     if (input[key] === undefined) continue;
+    // A checkbox the form does not have is already "off" (e.g. namesearch/intersect on an environmental field)
+    if (input[key] === false && !byName.has(key)) continue;
     if (!byName.has(key)) problems.push(`"${key}" is not a field of the form (form fields: ${fields.map((f) => f.name).join(", ")})`);
   }
   const body: Array<[string, string]> = [];

@@ -101,3 +101,10 @@ test("signature ignores data-driven options but catches structural drift", () =>
 test("a page without a POST form (e.g. the login page) is an error", () => {
   assert.throws(() => parseForm("<html><form method='GET'><input name='q'></form></html>"), /No POST form/);
 });
+
+test("false for a checkbox the form lacks is a no-op; true still fails closed", () => {
+  const fields = parseForm(ref("field-new.html")).filter((f) => f.name !== "namesearch");
+  const ok = buildSubmission(fields, { name: "BIO1", namesearch: false });
+  assert.ok(!ok.body.some(([k]) => k === "namesearch"));
+  assert.throws(() => buildSubmission(fields, { name: "BIO1", namesearch: true }), FormContractError);
+});
