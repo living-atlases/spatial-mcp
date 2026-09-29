@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { Agent, setGlobalDispatcher } from "undici";
 import { noAuth, OidcAuth, staticToken, type Auth } from "./auth.ts";
 import { loadConfig, secretsOf, type Config } from "./config.ts";
 import { createServer } from "./server.ts";
@@ -14,6 +15,8 @@ export function authFor(config: Config): Auth {
 
 /** Client for a config: bearer auth for the documented API, a web session for the admin pages. */
 export function clientFor(config: Config): SpatialClient {
+  // fetch has its own 300 s headers/body timeouts: a slow layer upload hits them before our AbortSignal.
+  if (config.timeoutMs) setGlobalDispatcher(new Agent({ headersTimeout: config.timeoutMs, bodyTimeout: config.timeoutMs }));
   return new SpatialClient(config.url, {
     auth: authFor(config),
     apiKey: config.apiKey,
