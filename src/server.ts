@@ -113,6 +113,26 @@ export function createServer(deps: ServerDeps): McpServer {
 
   // ---------------- health & discovery ----------------
 
+  let cachedVersion: string | undefined;
+  const serverVersion = async (): Promise<string | undefined> => {
+    if (cachedVersion === undefined) {
+      try {
+        const spec = (await (await client.raw("/openapi/openapi.json")).json()) as { info?: { version?: string } };
+        cachedVersion = spec.info?.version ?? "";
+      } catch {
+        cachedVersion = "";
+      }
+    }
+    return cachedVersion || undefined;
+  };
+  /** spatial-service before 3.0 hands GeoServer the .bil path of a raster upload, so it is never published (fixed upstream in a67c8dd). */
+  const rasterBugNote = (version: string, uploadId: string) =>
+    `spatial-service ${version} does not publish raster uploads to GeoServer (fixed in 3.x), so the layer form fails with a 500. ` +
+    `Workaround: include a GeoTIFF with the same name in the zip, then on the server publish it by hand, e.g. ` +
+    `curl -u admin -X PUT -H 'Content-type: text/plain' -d 'file:///data/spatial-data/uploads/${uploadId}/${uploadId}.tif' ` +
+    `'<geoserver>/rest/workspaces/ALA/coveragestores/${uploadId}/external.geotiff?configure=first' ` +
+    `(move ${uploadId}.prj aside while doing it), and retry spatial_create_layer.`;
+
   tool("spatial_health", "read", "Which spatial-service this server talks to, its version, whether the credentials work (admin endpoints), and drift against the reference version", {}, async () => {
     const out: Record<string, unknown> = { url: client.baseUrl, referenceVersion: REFERENCE_VERSION, readonly: config.readonly };
     try {
@@ -207,13 +227,19 @@ export function createServer(deps: ServerDeps): McpServer {
     const layer = toLayer(a);
     const field = toField(a);
     if (inspection.kind === "shapefile" && !field.sname) throw new Error(`"sname" is needed for a contextual layer; suggested DBF columns: ${(inspection.suggestedSname ?? []).join(", ")}`);
-    if (mustConfirm(a)) return { dryRun: true, inspection, layer: wf.previewLayer(layer), field: wf.previewField(field) };
+    const version = inspection.kind === "grid" ? await serverVersion() : undefined;
+    const rasterBug = version !== undefined && /^[12]\./.test(version);
+    if (mustConfirm(a)) {
+      return { dryRun: true, inspection, layer: wf.previewLayer(layer), field: wf.previewField(field, layer.type as string | undefined),
+        ...(rasterBug ? { warning: rasterBugNote(version!, "<uploadId>") } : {}) };
+    }
     const { uploadId } = await wf.upload(zip, a.path);
     let created: Awaited<ReturnType<typeof wf.createLayer>>;
     try {
       created = await wf.createLayer(uploadId, layer);
     } catch (e) {
-      throw new Error(`the zip was uploaded (upload ${uploadId}) but creating the layer failed: ${(e as Error).message}. Retry with spatial_create_layer {uploadId: "${uploadId}"} or remove it with spatial_delete {id: "${uploadId}", kind: "upload"}`);
+      const hint = rasterBug ? ` ${rasterBugNote(version!, uploadId)}` : "";
+      throw new Error(`the zip was uploaded (upload ${uploadId}) but creating the layer failed: ${(e as Error).message}.${hint} Retry with spatial_create_layer {uploadId: "${uploadId}"} or remove it with spatial_delete {id: "${uploadId}", kind: "upload"}`);
     }
     const layerId = created.layerId ?? uploadId;
     const creation = (await wf.layerTasks(uploadId)).tasks.filter((t) => t.name === "LayerCreation").map((t) => t.id);

@@ -135,8 +135,11 @@ export class Workflows {
     return { id, changed: sub.changes, message: q["message"] };
   }
 
-  previewField(input: FieldInput) {
-    return { contract: `reference form of spatial-service ${REFERENCE_VERSION} (sname options are the DBF columns of the real upload)`, ...buildSubmission(referenceForms.fieldNew().map(relaxDynamic), input) };
+  /** @param layerType the layer's type: the real field form presets "e" for an Environmental layer, the reference form says "c". */
+  previewField(input: FieldInput, layerType?: string) {
+    const form = referenceForms.fieldNew().map(relaxDynamic).map((f) =>
+      f.name === "type" && layerType === "Environmental" ? { ...f, value: "e" } : f);
+    return { contract: `reference form of spatial-service ${REFERENCE_VERSION} (sname options are the DBF columns of the real upload)`, ...buildSubmission(form, input) };
   }
 
   /** Add a field to a layer (POST /manageLayers/field/<layerId>): starts FieldCreation (or StandardizeLayers). */

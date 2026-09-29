@@ -3,6 +3,7 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, before, test } from "node:test";
+import { zipSync } from "fflate";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
@@ -241,4 +242,16 @@ test("streamable HTTP transport forwards the caller's bearer token", async () =>
     await mcp.close();
   }
   await new Promise((r) => http.close(r));
+});
+
+test("an Environmental layer previews its field as type e", async () => {
+  const c = await connect({ token: fake.adminToken });
+  const prj = new TextEncoder().encode('GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]]');
+  const grid = join(dir, "bio1.zip");
+  writeFileSync(grid, zipSync({ "bio1.hdr": new TextEncoder().encode("NROWS 1\nNCOLS 1\nNBITS 32\nNODATA -9999\n"), "bio1.bil": new Uint8Array(4), "bio1.prj": prj, "bio1.tif": new Uint8Array(4) }));
+  const dry = await c.call("spatial_add_layer", { path: grid, name: "bio1", displayname: "BIO1", type: "Environmental" });
+  assert.equal(dry.isError, false, dry.text);
+  assert.equal(Object.fromEntries(dry.json.field.body)["type"], "e");
+  assert.equal(dry.json.warning, undefined, "the fake server is 3.1.0: no raster warning");
+  await c.close();
 });

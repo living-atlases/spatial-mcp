@@ -84,6 +84,16 @@ export function inspectLayerZip(zip: Uint8Array): ZipInspection {
       const prj = pick(entries, base + ".prj");
       if (!prj) errors.push(`missing ${base}.prj (a BIL grid needs HDR, BIL and PRJ)`);
       checkPrj(prj);
+      const hdrText = new TextDecoder().decode(pick(entries, hdr[0]!) ?? new Uint8Array());
+      const nodata = /^\s*NODATA(?:_VALUE)?\s+(\S+)/im.exec(hdrText)?.[1];
+      if (nodata === undefined) {
+        warnings.push(`${hdr[0]} has no NODATA line: spatial-service then treats the minimum value minus 1 as "no data"`);
+      } else if (Math.abs(Number(nodata)) > 1e30) {
+        warnings.push(`${hdr[0]} uses NODATA ${nodata}; a plain value such as -9999 is safer (gdalwarp -dstnodata -9999 -of EHdr …)`);
+      }
+      if (!tif.some((n) => n.toLowerCase().startsWith(base.toLowerCase() + "."))) {
+        warnings.push(`no ${base}.tif next to the BIL: spatial-service publishes rasters to GeoServer from a GeoTIFF and converts the BIL with its own gdal if it is missing; adding one (gdal_translate -of GTiff -co COMPRESS=DEFLATE -co TILED=YES ${base}.bil ${base}.tif) avoids depending on the server's gdal`);
+      }
     }
   } else if (tif.length) {
     errors.push(`GeoTIFF is not accepted by the upload; convert it first, e.g. gdal_translate -of EHdr -ot Float32 ${tif[0]} out.bil (and zip out.bil, out.hdr, out.prj)`);
