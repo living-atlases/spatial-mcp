@@ -34,6 +34,16 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run test:integration
+      # The demo stack is redeployed from time to time: skip, rather than fail, while it is down.
+      - id: lademo
+        run: |
+          if curl -fsS -m 30 https://spatial.l-a.site/ws/fields | node -e 'if (!Array.isArray(JSON.parse(require("fs").readFileSync(0, "utf8")))) process.exit(1)'; then
+            echo "up=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "up=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::spatial.l-a.site is not available: integration tests skipped"
+          fi
+      - if: steps.lademo.outputs.up == 'true'
+        run: npm run test:integration
         env:
           SPATIAL_TEST_URL: https://spatial.l-a.site/ws

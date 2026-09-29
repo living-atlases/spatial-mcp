@@ -185,7 +185,8 @@ transport of this server gives users the same "nothing to install" experience wi
 ### CI
 
 - **GitHub Actions** (`.github/workflows/ci.yml`): unit tests on Node 20/22, build, `npm audit`, and the anonymous
-  integration tests against spatial.l-a.site (nightly too, to catch drift of the public API).
+  integration tests against spatial.l-a.site (nightly too, to catch drift of the public API), skipped while that
+  stack is down.
 - **Jenkins** (jenkins.gbif.es, job `spatial-mcp-tests`, `Jenkinsfile`, `jenkins/config.xml`): runs next to the LA
   demo stack deployed by `la-docker-compose-tests`, waits while that job runs (it wipes `/data`), reads the admin
   credentials from the lademo inventory without echoing them, and runs the admin integration test, which creates
