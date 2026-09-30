@@ -282,3 +282,19 @@ test("spatial-service 2.x task list (HTML only) gets a pointer to the per-layer 
     await old.close();
   }
 });
+
+test("spatial-service 2.x one-character layer id: the update error explains the uploads/<id>/layer.id workaround", async () => {
+  const f = await startFakeSpatial({ layerIdCharBug: true });
+  f.state.layers.set("2", { id: 2, name: "provincias", displayname: "Provincias", type: "Contextual", enabled: true });
+  const c = await connect({ token: f.adminToken, fakeServer: f });
+  try {
+    const r = await c.call("spatial_update_layer", { id: "2", source: "IGN", dryRun: false, confirm: true });
+    assert.equal(r.isError, true);
+    assert.match(r.text, /altered from 2 to 50/);
+    assert.match(r.text, /uploads\/2\/layer\.id/);
+    assert.doesNotMatch(r.text, /spatial-data|gbif/i);
+  } finally {
+    await c.close();
+    await f.close();
+  }
+});

@@ -131,8 +131,15 @@ export class Workflows {
     const form = parseForm(await this.client.layerForm(id));
     const sub = buildSubmission(form, input);
     if (Object.keys(sub.changes).length === 0) return { unchanged: true };
-    const q = await this.client.postForm(`/manageLayers/layer/${id}`, sub.body);
-    return { id, changed: sub.changes, message: q["message"] };
+    try {
+      const q = await this.client.postForm(`/manageLayers/layer/${id}`, sub.body);
+      return { id, changed: sub.changes, message: q["message"] };
+    } catch (e) {
+      // 2.x createOrUpdateLayer does `layer.id = <data dir>/uploads/<id>/layer.id` text; Groovy casts a
+      // one-character String to its char code ("2" -> 50) and Hibernate refuses the new id.
+      if (!/identifier of an instance of .*Layers was altered from \d to \d+/.test(String((e as Error).message))) throw e;
+      throw new Error(`${(e as Error).message}\nhint: spatial-service 2.x reads <spatial-service data dir>/uploads/${id}/layer.id and casts a one-character id to its char code. Move that file aside on the server and retry: it only holds "${id}" and spatial-service writes it again after saving.`, { cause: e });
+    }
   }
 
   /** @param layerType the layer's type: the real field form presets "e" for an Environmental layer, the reference form says "c". */

@@ -26,7 +26,7 @@ const layerGsp = readFileSync(join(REF, "layer.gsp"), "utf8");
 const fieldGsp = readFileSync(join(REF, "field.gsp"), "utf8");
 const page = (form: string) => `<!DOCTYPE html><html><body><div class="container">${form}</div></body></html>`;
 
-export async function startFakeSpatial(opts: { adminToken?: string; failTask?: string; formHtml?: (kind: string, html: string) => string; bearerOnAdminPages?: boolean; reloadNeedsApiKey?: boolean; tasksAllHtml?: boolean } = {}) {
+export async function startFakeSpatial(opts: { adminToken?: string; failTask?: string; formHtml?: (kind: string, html: string) => string; bearerOnAdminPages?: boolean; reloadNeedsApiKey?: boolean; tasksAllHtml?: boolean; layerIdCharBug?: boolean } = {}) {
   const adminToken = opts.adminToken ?? "admin-token";
   const login = { username: "admin@example.org", password: "s3cret-pw" };
   const state: FakeState = { uploads: new Map(), layers: new Map(), fields: new Map(), tasks: new Map(), posts: [], requests: [] };
@@ -137,6 +137,8 @@ export async function startFakeSpatial(opts: { adminToken?: string; failTask?: s
         state.posts.push({ path: p, body });
         const f = Object.fromEntries(body);
         if (!f["name"]) return redirect("/manageLayers/layers?error=name+missing");
+        // 2.x reads uploads/<id>/layer.id and Groovy casts a one-character String to its char code
+        if (layer && opts.layerIdCharBug && id.length === 1) return redirect(`/manageLayers/layers?error=${encodeURIComponent(`error updating layer: identifier of an instance of au.org.ala.spatial.Layers was altered from ${id} to ${id.charCodeAt(0)}`)}`);
         if (layer) {
           Object.assign(layer, f, { enabled: f["enabled"] === "on" });
           return redirect(`/manageLayers/layers?layer_id=${layerId}&message=Layer+updated`);
