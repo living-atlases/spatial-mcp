@@ -83,9 +83,12 @@ ALA support articles ([Tools](https://support.ala.org.au/support/solutions/artic
 |---|---|
 | `SPATIAL_URL` / `--spatial` | spatial-service base URL including `/ws` |
 | `SPATIAL_GEOSERVER_URL` / `--geoserver` | GeoServer base (default `<host>/geoserver`) |
-| `SPATIAL_USERNAME`, `SPATIAL_PASSWORD` | admin account: browser-like login (OIDC → CAS form → session cookie) for the admin pages (falls back to `SPATIAL_OIDC_USERNAME`/`_PASSWORD`) |
+| `SPATIAL_OIDC_ISSUER`, `SPATIAL_OIDC_CLIENT_ID` | **default**: the user's own OIDC login with a public client (Authorization Code + PKCE, loopback redirect; `src/oidc.ts`, `src/oidc-auth.ts`). Refresh token in the OS keyring or a 0600 file (`src/token-store.ts`), access token in memory only |
+| `SPATIAL_OIDC_SCOPE`, `SPATIAL_OIDC_FLOW` (`browser`/`device`), `SPATIAL_OIDC_REDIRECT_PORT`, `SPATIAL_OIDC_REDIRECT_HOST`, `SPATIAL_OIDC_LOGIN_WAIT_MS` (45000), `SPATIAL_TOKEN_STORE` (`auto`/`keyring`/`file`) | tuning of that login |
+| `SPATIAL_USERNAME` | admin account for the browser-like login (OIDC → CAS form → session cookie) to the admin pages of spatial-service 3.1.0 (finding 1); the password is read from the keyring/file (`spatial-mcp set-password`). Falls back to `SPATIAL_OIDC_USERNAME` |
+| `SPATIAL_PASSWORD` | deprecated: that password in plain text (falls back to `SPATIAL_OIDC_PASSWORD`) |
 | `SPATIAL_TOKEN` | OIDC access token (honoured only by `@RequireApiKey` actions, e.g. `/tasks/create`) |
-| `SPATIAL_OIDC_ISSUER` or `SPATIAL_OIDC_TOKEN_URL`, `SPATIAL_OIDC_CLIENT_ID`, `SPATIAL_OIDC_CLIENT_SECRET`, `SPATIAL_OIDC_USERNAME`, `SPATIAL_OIDC_PASSWORD`, `SPATIAL_OIDC_SCOPE` | password grant, token cached and renewed (discovery finds the token endpoint) |
+| `SPATIAL_OIDC_TOKEN_URL`, `SPATIAL_OIDC_CLIENT_SECRET`, `SPATIAL_OIDC_USERNAME`, `SPATIAL_OIDC_PASSWORD` | machine grants (CI): any of them switches from the user login to the password or client-credentials grant, token cached and renewed |
 | `SPATIAL_API_KEY` | serviceKey, only for `/tasks/create` and `/tasks/cancel` without a user |
 | `SPATIAL_READONLY=1` / `--readonly` | refuse every write |
 | `SPATIAL_ALLOWED_DIRS` | `:`-separated directories zips may be read from |
@@ -108,14 +111,42 @@ discovery for MCP clients (they need to obtain the token themselves).
 
 ## Findings about spatial-service 3.1.0
 
-1. **Admin pages need a browser session.** In 2.x `LoginInterceptor` let a valid API key through `@RequireAdmin`.
+1. **Admin pages need a browser session; a bearer JWT only works on `@RequireApiKey` actions.** In 2.x `LoginInterceptor` let a valid API key through `@RequireAdmin`.
    In 3.x it needs `authService.getUserId()` plus the admin role, and `authService` only sees the pac4j profile of
    the web session: a bearer JWT is turned into a profile only by ala-ws-security's `AlaSecurityInterceptor`, which
    runs only on `@RequireApiKey` actions (`/tasks/create`, `/tasks/cancel`). Verified on the LA demo: a valid admin
    token from the CAS password grant gets `401 user login required` on `/manageLayers/*`. So `src/web-session.ts`
    logs in like a browser (spatial → OIDC authorize → CAS login form → callback → `JSESSIONID`) and retries once
    when a request is refused. Consequence: the HTTP transport, which only has the caller's token, cannot use the
-   admin pages.
+   admin pages, and neither can the password-less OIDC login of stdio.
+
+   Per action (3.1.0 source, ala-security-project 7.0.1):
+
+   | Actions | Annotation | Bearer JWT of an admin |
+   |---|---|---|
+   | `/manageLayers/*` (layers, uploads, upload, layer, field, `.json` views, remote, importLayer/Field, delete…), `/tasks/` index, all, reRun, uiCreate, uiCancel, `ReportController` | `@RequireAdmin` | refused (session only) |
+   | `/tasks/show`, `/tasks/download` | `@RequireLogin` | refused (session only) |
+   | `/tasks/create`, `/tasks/cancel`, `/shape/upload/*` (wkt, geojson, shp, kml, pointradius), shape delete, `/intersect/reloadconfig`, `/manageLayers/resource` and `resourcePeek` (`/master/*`) | `@RequireApiKey` | accepted |
+   | `/tasks/` status, capabilities, output, `/layers`, `/fields`, `/objects`, `/intersect/{ids}/…`, `/shapes/*` reads | none | public |
+
+   The JWT is validated by ala-ws-security's `DirectBearerAuthClient` (`security.jwt.enabled`): issuer from
+   `security.jwt.discoveryUri`, required claims `sub iat exp client_id jti iss` (`security.jwt.requiredClaims`), no
+   audience check unless `security.jwt.acceptedAudiences` is set, roles from `security.jwt.roleClaims` (`role` by
+   default; ala-install sets `cognito:groups`), prefixed `ROLE_` and upper-cased; `auth.admin_role` is `ROLE_ADMIN`.
+   A JWT never creates a session: the direct client does not save the profile in it, and `/callback` only serves the
+   interactive `OidcClient`. So a token issued to spatial-mcp's own public client works on every `@RequireApiKey`
+   action, and the stdio server tries it on the admin pages first (`spatial_health` reports `adminPagesAcceptToken`),
+   falling back to the web session when `SPATIAL_USERNAME` is set.
+
+   The upstream fix is small: in `LoginInterceptor.before()`, when `authService.getUserId()` is null and the request
+   carries `Authorization: Bearer`, run the `alaClient` direct clients the way `AlaSecurityInterceptor` does
+   (`client.getCredentials` → `validateCredentials` → `getUserProfile` → `profileManager.save(false, profile, false)`)
+   before checking the role. Then the OIDC login (and the HTTP transport) covers the admin pages and the password
+   fallback can go.
+
+   Side finding: with ala-install's defaults (`jwt_enabled: false`, `security.apikey.enabled` unset) no `alaClient`
+   bean exists, so `AlaSecurityInterceptor` has no client and every `@RequireApiKey` action above (shape upload and
+   delete, `/tasks/create|cancel`, `/intersect/reloadconfig`, `/master/*`) is not authenticated at the interceptor.
 2. **Layer administration has no API.** `/manageLayers/*` is not in the OpenAPI spec; it answers with 302
    redirects to HTML pages, and ids have to be read from the `Location` header or from `…/layer/<id>.json`.
 3. **The form's limits are only in the HTML.** `maxlength`s, select options and read-only fields are not checked
@@ -157,7 +188,7 @@ discovery for MCP clients (they need to obtain the token themselves).
 What would make this safe by design, and could be proposed upstream:
 - a small JSON admin API for layers/fields (create, update, delete) documented in the OpenAPI spec, with the same
   validation as the form done server side;
-- let `@RequireAdmin` accept a bearer JWT with the admin role (run the JWT authenticator for it too), and/or
+- let `@RequireAdmin` accept a bearer JWT with the admin role (run the JWT authenticator for it too, see finding 1), and/or
   admin by API key or a scoped service token (client credentials with an admin scope) again;
 - fix the `inputs`/`input` mismatch in the spec;
 - load the task specs from the classpath, not from the file system (finding 8);
@@ -177,6 +208,7 @@ transport of this server gives users the same "nothing to install" experience wi
 | `test/form-contract.test.ts` | reference forms (real 3.1.0 GSPs) | parsing, defaults, fail-closed rules, read-only fields, drift signature |
 | `test/shapefile.test.ts` | generated shapefiles | SHP/SHX/DBF/PRJ presence, WGS84, encoding, GeoTIFF/BIL rules, DBF columns |
 | `test/misc.test.ts` | — | task verdicts, redaction, config, the GSP renderer |
+| `test/oidc.test.ts` | fake OIDC provider (`test/helpers/fake-idp.ts`) + fake spatial-service | discovery, PKCE S256, state/nonce, loopback and device logins, refresh-token rotation, `invalid_grant` → new login, token store (keyring fallback, 0600 file), lazy login over MCP, health never logging in, 3.1.0 admin pages refusing the token |
 | `test/mcp-e2e.test.ts` | fake spatial-service (`test/helpers/fake-spatial.ts`) | the whole flow over MCP, what reaches the server, failures, drift, read-only, auth, HTTP transport |
 | `test/integration/lademo.test.ts` | a real spatial-service | spec drift, public reads, anonymous refusal; as admin: add → verify → admin UI → edit → delete |
 
@@ -202,4 +234,4 @@ Dependencies are MIT. `reference/3.1.0/` contains files from spatial-service 3.1
 ## Not covered yet
 
 Styles/SLD and GeoServer settings, distributions and checklists (expert distributions), environmental (grid) layers
-end to end, `LayerCopy` between servers, user/role management, the authorization-code (browser) login flow for stdio.
+end to end, `LayerCopy` between servers, user/role management, OAuth discovery for MCP clients of the HTTP transport.

@@ -11,8 +11,18 @@ export class SpatialError extends Error {
     readonly status: number,
     readonly body: string,
   ) {
-    super(`spatial-service ${path} -> ${status}${status === 401 || status === 403 ? " (needs a logged-in user with the admin role: configure SPATIAL_USERNAME and SPATIAL_PASSWORD)" : ""}: ${body.slice(0, 500)}`);
+    super(`spatial-service ${path} -> ${status}${status === 401 || status === 403 ? ` (${authHint(path)})` : ""}: ${body.slice(0, 500)}`);
   }
+}
+
+/** @RequireAdmin pages of spatial-service 3.1.0 only see the web session, never a bearer token. */
+export const isAdminPage = (path: string) => /^\/(manageLayers|tasks\/(all|reRun|index|show|download)|report)\b/.test(path);
+
+function authHint(path: string) {
+  return isAdminPage(path)
+    ? "needs a user with the admin role. spatial-service up to 3.1.0 only accepts a web-session login on its admin pages, not an OIDC token: " +
+        "set SPATIAL_USERNAME and store the password with `spatial-mcp set-password` (see README), or patch spatial-service to accept bearer tokens there"
+    : "needs a logged-in user with the admin role: log in with spatial_login (OIDC), and check the account has the admin role in the portal";
 }
 
 type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
@@ -76,7 +86,8 @@ export class SpatialClient {
     this.api = createClient<paths>({ baseUrl, fetch: (req: Request) => this.fetchImpl(req) });
     this.api.use({
       onRequest: async ({ request }) => {
-        for (const [k, v] of Object.entries(await this.auth.headers())) request.headers.set(k, v);
+        // The documented API is mostly public: send a token when there is one, never start a login for it.
+        for (const [k, v] of Object.entries(await this.auth.headers({ interactive: false }))) request.headers.set(k, v);
         if (!request.headers.has("Accept")) request.headers.set("Accept", "application/json");
         return request;
       },
@@ -194,14 +205,21 @@ export class SpatialClient {
 
   // ---------- plumbing ----------
 
-  async raw(path: string, o: { method?: string; json?: unknown; body?: BodyInit; user?: boolean; apiKey?: boolean | "always"; accept?: string } = {}): Promise<Response> {
+  /** Whether a web-session login is configured for the admin pages. */
+  get hasSession() {
+    return !!this.opts.session;
+  }
+
+  /** session:false sends only the bearer token (to find out whether the admin pages accept it). */
+  async raw(path: string, o: { method?: string; json?: unknown; body?: BodyInit; user?: boolean; apiKey?: boolean | "always"; accept?: string; session?: false } = {}): Promise<Response> {
     const url = this.baseUrl + path;
+    const session = o.session === false ? undefined : this.opts.session;
     const send = async () => {
       const headers: Record<string, string> = { Accept: o.accept ?? "application/json" };
       if (o.user) Object.assign(headers, await this.auth.headers());
       // "always": endpoints that only accept the serviceKey (@RequireApiKey), whatever user credentials go along
       if (o.apiKey && this.opts.apiKey && (o.apiKey === "always" || !headers["Authorization"])) headers["apiKey"] = this.opts.apiKey;
-      const cookie = o.user ? this.opts.session?.cookieFor(url) : undefined;
+      const cookie = o.user ? session?.cookieFor(url) : undefined;
       if (cookie) headers["Cookie"] = cookie;
       let body = o.body;
       if (o.json !== undefined) {
@@ -209,12 +227,12 @@ export class SpatialClient {
         body = JSON.stringify(o.json);
       }
       const res = await this.fetchImpl(url, { method: o.method ?? "GET", headers, body, redirect: "manual", signal: AbortSignal.timeout(this.timeoutMs) });
-      if (o.user) this.opts.session?.store(url, res);
+      if (o.user) session?.store(url, res);
       return res;
     };
     const res = await send();
-    if (o.user && this.opts.session && this.needsLogin(res)) {
-      await this.opts.session.login(`${this.baseUrl}/manageLayers/layers`);
+    if (o.user && session && this.needsLogin(res)) {
+      await session.login(`${this.baseUrl}/manageLayers/layers`);
       return send();
     }
     return res;

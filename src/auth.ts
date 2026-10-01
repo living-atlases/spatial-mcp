@@ -7,13 +7,20 @@ import type { OidcConfig } from "./config.ts";
  * spatial-service 3.x protects /manageLayers/* with @RequireAdmin, which needs an authenticated *user*
  * with the admin role (an API key is no longer enough), so the header must carry a user's OIDC token:
  * - HTTP transport: the token the MCP client sent to us (per request, never stored);
- * - stdio: SPATIAL_TOKEN, or a token obtained with the OIDC password grant and cached until it expires.
+ * - stdio: the user's own OIDC login (browser or device, see oidc-auth.ts), SPATIAL_TOKEN, or a token obtained with
+ *   the OIDC password grant and cached until it expires.
  */
 export interface Auth {
-  /** Headers for an authenticated call, or {} when no credentials are configured. */
-  headers(): Promise<Record<string, string>>;
+  /**
+   * Headers for an authenticated call, or {} when no credentials are configured. With interactive:false (public
+   * reads, health checks) an auth that would have to ask the user to log in sends nothing instead.
+   */
+  headers(o?: { interactive?: boolean }): Promise<Record<string, string>>;
   readonly describe: string;
 }
+
+/** Calls made inside nonInteractive.run(true, …) never start a login (spatial_health). */
+export const nonInteractive = new AsyncLocalStorage<boolean>();
 
 export const noAuth: Auth = { headers: async () => ({}), describe: "none (public endpoints only)" };
 

@@ -1,7 +1,9 @@
 import { readFileSync } from "node:fs";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { nonInteractive, type Auth } from "./auth.ts";
 import type { Config } from "./config.ts";
+import { InteractiveOidcAuth } from "./oidc-auth.ts";
 import { FormContractError } from "./form-contract.ts";
 import { assertLayerZip } from "./paths.ts";
 import { Redactor } from "./redact.ts";
@@ -26,13 +28,17 @@ Rules:
 - Every write is a dry run unless dryRun:false AND confirm:true. Deletes and cancels need confirm:true.
 - Writes to the admin UI go through the "form contract": the live admin form is read and only what a person could send
   with that form is sent (maxlength, select options, read-only fields). If it refuses, change the input; do not work around it.
-- Admin tools need a user with the admin role (OIDC token). Public read tools work without credentials.
+- Admin tools need a user with the admin role. With an OIDC login configured, the first admin call opens the portal login
+  in the user's browser; if it answers "Not logged in", give the user the URL from the message and retry once they say they
+  have logged in (or call spatial_login). Never ask the user for passwords or tokens. Public read tools work without credentials.
 - User analyses (Area report, AOO/EOO, Points to grid, …) run with spatial_run_task; list them with spatial_capabilities.`;
 
 type ToolResult = { isError?: boolean; content: Array<{ type: "text"; text: string }> };
 
 export interface ServerDeps {
   client: SpatialClient;
+  /** How the client authenticates; its login/status (OIDC login of the user) back spatial_login and spatial_health. */
+  auth?: Auth;
   config: Pick<Config, "readonly" | "geoserverUrl" | "pollWaitMs">;
   secrets?: Array<string | undefined>;
   pollEveryMs?: number;
@@ -134,8 +140,22 @@ export function createServer(deps: ServerDeps): McpServer {
     `then create the coverage store as a GeoServer admin: PUT ${config.geoserverUrl}/rest/workspaces/ALA/coveragestores/${uploadId}/external.geotiff?configure=first ` +
     `with body file://<spatial-service data dir>/uploads/${uploadId}/${uploadId}.tif (Content-type: text/plain), and retry spatial_create_layer {uploadId: "${uploadId}"}.`;
 
-  tool("spatial_health", "read", "Which spatial-service this server talks to, its version, whether the credentials work (admin endpoints), and drift against the reference version", {}, async () => {
-    const out: Record<string, unknown> = { url: client.baseUrl, referenceVersion: REFERENCE_VERSION, readonly: config.readonly };
+  const oidc = deps.auth instanceof InteractiveOidcAuth ? deps.auth : undefined;
+
+  /** Auth mode and user, without ever starting a login. */
+  const authReport = async () => {
+    const out: Record<string, unknown> = { mode: deps.auth?.describe ?? "none (public endpoints only)" };
+    if (oidc) {
+      const s = await oidc.status();
+      Object.assign(out, s);
+      if (!s.loggedIn && !s.pendingLogin) out["hint"] = "not logged in: call spatial_login (it opens the portal login in the browser)";
+    }
+    if (client.hasSession) out["adminPagesFallback"] = "web session (SPATIAL_USERNAME, password from the keyring)";
+    return out;
+  };
+
+  tool("spatial_health", "read", "Which spatial-service this server talks to, its version, the auth mode and logged-in user, whether admin access works, and drift against the reference version", {}, () => nonInteractive.run(true, async () => {
+    const out: Record<string, unknown> = { url: client.baseUrl, referenceVersion: REFERENCE_VERSION, readonly: config.readonly, auth: await authReport() };
     try {
       const spec = (await (await client.raw("/openapi/openapi.json")).json()) as { info?: { version?: string } };
       out["version"] = spec.info?.version;
@@ -144,14 +164,34 @@ export function createServer(deps: ServerDeps): McpServer {
       out["version"] = `unknown (${(e as Error).message})`;
     }
     out["layers"] = (await client.layers()).length;
-    try {
-      await client.manageLayers();
-      out["admin"] = "ok";
-    } catch (e) {
-      out["admin"] = `not available: ${(e as Error).message}`;
+    if (oidc && (await oidc.silentToken().catch(() => undefined))) {
+      // Does this spatial-service take the OIDC token on its admin pages (3.1.0 does not: web session only)?
+      const r = await client.raw("/manageLayers/layers", { user: true, accept: "application/json", session: false }).catch(() => undefined);
+      (out["auth"] as Record<string, unknown>)["adminPagesAcceptToken"] = r?.status === 200;
+    }
+    const session = !oidc || client.hasSession || (out["auth"] as Record<string, unknown>)["adminPagesAcceptToken"];
+    if (!session) {
+      out["admin"] = (out["auth"] as { loggedIn?: boolean }).loggedIn
+        ? "not available: this spatial-service refuses OIDC tokens on its admin pages (layers, uploads, task list); the API, tasks, areas and the intersect reload work. See README (admin pages on spatial-service 3.1.0)"
+        : "unknown until you log in (spatial_login)";
+    } else {
+      try {
+        await client.manageLayers();
+        out["admin"] = "ok";
+      } catch (e) {
+        out["admin"] = `not available: ${(e as Error).message}`;
+      }
     }
     return out;
-  });
+  }));
+
+  if (oidc) {
+    tool("spatial_login", "local", "Log in to the portal (OIDC): opens the portal's login page in the user's browser and waits for it. Returns who is logged in, or the URL to open if the user has not finished yet (call again once they have). force:true logs in again, e.g. as another user", { force: z.boolean().default(false) }, async ({ force }) => {
+      const s = await oidc.login(force);
+      return s.loggedIn ? { ...s, pendingLogin: undefined } : { ...s, message: s.pendingLogin?.userCode ? `Ask the user to open ${s.pendingLogin.url} and enter the code ${s.pendingLogin.userCode}, then call spatial_login again.` : `Ask the user to finish the login in the browser (or open ${s.pendingLogin?.url}), then call spatial_login again.` };
+    });
+    tool("spatial_logout", "local", "Forget the OIDC login (removes the refresh token from the keyring)", { confirm }, async (a) => confirmOnly(a, "log out of the portal") ?? (await oidc.logout(), { loggedIn: false }));
+  }
 
   tool("spatial_capabilities", "read", "Tasks (analyses and maintenance processes) this spatial-service can run, with their input specs. Admins see private ones too", {}, async () => {
     const caps = await client.capabilities();

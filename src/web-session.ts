@@ -18,7 +18,8 @@ export class WebSession {
 
   constructor(
     private readonly username: string,
-    private readonly password: string,
+    /** The password itself (deprecated SPATIAL_PASSWORD) or where to read it from when it is needed (OS keyring / file). */
+    private readonly password: string | (() => Promise<string | undefined>),
     private readonly fetchImpl: FetchLike = fetch,
     private readonly maxHops = 25,
   ) {}
@@ -69,8 +70,10 @@ export class WebSession {
       const form = loginForm(html, url);
       if (form) {
         if (submitted) throw new Error(`login to ${new URL(url).host} was refused (wrong username or password?)`);
+        const password = typeof this.password === "string" ? this.password : await this.password();
+        if (!password) throw new Error(`no password stored for ${this.username}: run \`spatial-mcp set-password\` in a terminal (see README), or log in with OIDC on a spatial-service that accepts bearer tokens on its admin pages`);
         form.fields.set(form.userField, this.username);
-        form.fields.set(form.passwordField, this.password);
+        form.fields.set(form.passwordField, password);
         url = form.action;
         init = { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams([...form.fields]) };
         submitted = true;

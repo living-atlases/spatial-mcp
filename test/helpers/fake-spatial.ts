@@ -26,7 +26,7 @@ const layerGsp = readFileSync(join(REF, "layer.gsp"), "utf8");
 const fieldGsp = readFileSync(join(REF, "field.gsp"), "utf8");
 const page = (form: string) => `<!DOCTYPE html><html><body><div class="container">${form}</div></body></html>`;
 
-export async function startFakeSpatial(opts: { adminToken?: string; failTask?: string; formHtml?: (kind: string, html: string) => string; bearerOnAdminPages?: boolean; reloadNeedsApiKey?: boolean; tasksAllHtml?: boolean; layerIdCharBug?: boolean } = {}) {
+export async function startFakeSpatial(opts: { adminToken?: string; failTask?: string; formHtml?: (kind: string, html: string) => string; bearerOnAdminPages?: boolean; reloadNeedsApiKey?: boolean; tasksAllHtml?: boolean; layerIdCharBug?: boolean; acceptToken?: (token: string) => boolean } = {}) {
   const adminToken = opts.adminToken ?? "admin-token";
   const login = { username: "admin@example.org", password: "s3cret-pw" };
   const state: FakeState = { uploads: new Map(), layers: new Map(), fields: new Map(), tasks: new Map(), posts: [], requests: [] };
@@ -45,7 +45,8 @@ export async function startFakeSpatial(opts: { adminToken?: string; failTask?: s
     state.requests.push(`${req.method} ${path}`);
     const json = (code: number, body: unknown) => res.writeHead(code, { "Content-Type": "application/json" }).end(JSON.stringify(body));
     const redirect = (to: string) => res.writeHead(302, { Location: `${base}${to}` }).end();
-    const bearer = req.headers["authorization"] === `Bearer ${adminToken}`;
+    const presented = (req.headers["authorization"] ?? "").replace(/^Bearer\s+/i, "");
+    const bearer = presented === adminToken || (!!presented && !!opts.acceptToken?.(presented));
     const session = /(^|;\s*)JSESSIONID=admin-session(;|$)/.test(req.headers["cookie"] ?? "");
     // Like spatial-service 3.x: @RequireAdmin pages only see the web session; bearer tokens count elsewhere.
     const adminPage = path.startsWith("/ws/manageLayers") || path.startsWith("/ws/tasks/all") || path.startsWith("/ws/tasks/reRun");
