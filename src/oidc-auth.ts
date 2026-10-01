@@ -33,7 +33,8 @@ export interface LoginStatus {
 export class LoginRequired extends Error {}
 
 /**
- * OIDC login of the person using the assistant: no password anywhere. The refresh token is kept in the OS keyring
+ * Experimental (WIP): OIDC login of the person using the assistant, no password anywhere. spatial-service 3.1.0
+ * refuses the token on its @RequireAdmin pages, so the web session (SPATIAL_USERNAME) stays the default. The refresh token is kept in the OS keyring
  * (or a 0600 file), the access token only in memory; it is refreshed silently and a new browser login is started
  * when the refresh token has expired or been revoked. Tokens are never logged or returned.
  */
@@ -50,7 +51,7 @@ export class InteractiveOidcAuth implements Auth {
     readonly cfg: InteractiveOidcConfig,
     private readonly deps: { fetch?: FetchLike; openBrowser?: (url: string) => void; store?: TokenStore } = {},
   ) {
-    this.describe = `OIDC ${cfg.flow === "device" ? "device" : "browser"} login (${cfg.issuer}, client ${cfg.clientId})`;
+    this.describe = `experimental OIDC ${cfg.flow === "device" ? "device" : "browser"} login (${cfg.issuer}, client ${cfg.clientId})`;
   }
 
   private endpoints() {

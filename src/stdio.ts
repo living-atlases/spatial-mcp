@@ -9,6 +9,7 @@ import { SpatialClient } from "./spatial-client.ts";
 import { openTokenStore, passwordKey } from "./token-store.ts";
 import { WebSession } from "./web-session.ts";
 
+/** The OIDC user login is experimental (opt-in with SPATIAL_OIDC_ISSUER + SPATIAL_OIDC_CLIENT_ID, no secret). */
 export function authFor(config: Config): Auth {
   if (config.token) return staticToken(config.token);
   if (config.interactive) return new InteractiveOidcAuth(config.interactive);
@@ -39,7 +40,7 @@ export async function main() {
   const client = clientFor(config, auth);
   const server = createServer({ client, config, auth, secrets: secretsOf(config) });
   await server.connect(new StdioServerTransport());
-  if (config.login?.password) console.error("spatial-mcp: SPATIAL_PASSWORD is deprecated (it sits in plain text in the MCP config): use the OIDC login, or store it with `spatial-mcp set-password`");
+  if (config.login?.password) console.error("spatial-mcp: SPATIAL_PASSWORD is deprecated (it sits in plain text in the MCP config): store it in the keyring with `spatial-mcp set-password` and remove it from the config");
   console.error(`spatial-mcp (POC) on stdio -> ${config.url} (auth: ${auth.describe}${config.login ? `, admin pages as ${config.login.username}` : ""}${config.readonly ? ", read-only" : ""})`);
 }
 

@@ -71,7 +71,7 @@ export class WebSession {
       if (form) {
         if (submitted) throw new Error(`login to ${new URL(url).host} was refused (wrong username or password?)`);
         const password = typeof this.password === "string" ? this.password : await this.password();
-        if (!password) throw new Error(`no password stored for ${this.username}: run \`spatial-mcp set-password\` in a terminal (see README), or log in with OIDC on a spatial-service that accepts bearer tokens on its admin pages`);
+        if (!password) throw new Error(`no password stored for ${this.username}: run \`spatial-mcp set-password\` in a terminal (see README)`);
         form.fields.set(form.userField, this.username);
         form.fields.set(form.passwordField, password);
         url = form.action;

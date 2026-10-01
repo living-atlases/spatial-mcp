@@ -7,7 +7,8 @@ import type { InteractiveOidcConfig } from "./oidc-auth.ts";
  *   --geoserver <url> | SPATIAL_GEOSERVER_URL   GeoServer base (default: <host>/geoserver)
  *   SPATIAL_READONLY=1                    refuse every write
  *
- *   OIDC login of the person (default; no secret anywhere): a public client, Authorization Code + PKCE in the browser
+ *   Experimental (WIP, opt-in) OIDC login of the person, no secret anywhere: a public client, Authorization Code + PKCE.
+ *   spatial-service 3.1.0 refuses its token on the admin pages, so SPATIAL_USERNAME stays the default there
  *   SPATIAL_OIDC_ISSUER                   e.g. https://auth.example.org/cas/oidc (endpoints come from its discovery document)
  *   SPATIAL_OIDC_CLIENT_ID                public client registered for spatial-mcp
  *   SPATIAL_OIDC_SCOPE                    default "openid profile email roles ala offline_access"
@@ -17,7 +18,7 @@ import type { InteractiveOidcConfig } from "./oidc-auth.ts";
  *   SPATIAL_OIDC_LOGIN_WAIT_MS            how long a tool call waits for the browser login (default 45000)
  *   SPATIAL_TOKEN_STORE                   where the refresh token is kept: "auto" (OS keyring, else a 0600 file), "keyring", "file"
  *
- *   Web session for the admin pages of spatial-service versions that refuse bearer tokens there (3.1.0):
+ *   Default: web session for the admin pages (spatial-service 3.1.0 only accepts a session there):
  *   SPATIAL_USERNAME                      portal admin account; its password is read from the OS keyring / 0600 file
  *                                         (store it with `spatial-mcp set-password`), never from the MCP config
  *   SPATIAL_PASSWORD                      deprecated: the password in plain text (falls back to SPATIAL_OIDC_PASSWORD)

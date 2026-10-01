@@ -22,7 +22,7 @@ function authHint(path: string) {
   return isAdminPage(path)
     ? "needs a user with the admin role. spatial-service up to 3.1.0 only accepts a web-session login on its admin pages, not an OIDC token: " +
         "set SPATIAL_USERNAME and store the password with `spatial-mcp set-password` (see README), or patch spatial-service to accept bearer tokens there"
-    : "needs a logged-in user with the admin role: log in with spatial_login (OIDC), and check the account has the admin role in the portal";
+    : "needs a logged-in user with the admin role: check SPATIAL_USERNAME and its stored password (`spatial-mcp set-password`), or spatial_login with the experimental OIDC login, and that the account has the admin role in the portal";
 }
 
 type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;

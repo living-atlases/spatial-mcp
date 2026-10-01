@@ -83,12 +83,12 @@ ALA support articles ([Tools](https://support.ala.org.au/support/solutions/artic
 |---|---|
 | `SPATIAL_URL` / `--spatial` | spatial-service base URL including `/ws` |
 | `SPATIAL_GEOSERVER_URL` / `--geoserver` | GeoServer base (default `<host>/geoserver`) |
-| `SPATIAL_OIDC_ISSUER`, `SPATIAL_OIDC_CLIENT_ID` | **default**: the user's own OIDC login with a public client (Authorization Code + PKCE, loopback redirect; `src/oidc.ts`, `src/oidc-auth.ts`). Refresh token in the OS keyring or a 0600 file (`src/token-store.ts`), access token in memory only |
+| `SPATIAL_OIDC_ISSUER`, `SPATIAL_OIDC_CLIENT_ID` | **experimental (WIP)**, opt-in: the user's own OIDC login with a public client (Authorization Code + PKCE, loopback redirect; `src/oidc.ts`, `src/oidc-auth.ts`). Refresh token in the OS keyring or a 0600 file (`src/token-store.ts`), access token in memory only |
 | `SPATIAL_OIDC_SCOPE`, `SPATIAL_OIDC_FLOW` (`browser`/`device`), `SPATIAL_OIDC_REDIRECT_PORT`, `SPATIAL_OIDC_REDIRECT_HOST`, `SPATIAL_OIDC_LOGIN_WAIT_MS` (45000), `SPATIAL_TOKEN_STORE` (`auto`/`keyring`/`file`) | tuning of that login |
-| `SPATIAL_USERNAME` | admin account for the browser-like login (OIDC → CAS form → session cookie) to the admin pages of spatial-service 3.1.0 (finding 1); the password is read from the keyring/file (`spatial-mcp set-password`). Falls back to `SPATIAL_OIDC_USERNAME` |
+| `SPATIAL_USERNAME` | **default**: admin account for the browser-like login (OIDC → CAS form → session cookie) to the admin pages (finding 1); the password is read from the OS keyring or a 0600 file (`spatial-mcp set-password`), never from the MCP config. Falls back to `SPATIAL_OIDC_USERNAME` |
 | `SPATIAL_PASSWORD` | deprecated: that password in plain text (falls back to `SPATIAL_OIDC_PASSWORD`) |
 | `SPATIAL_TOKEN` | OIDC access token (honoured only by `@RequireApiKey` actions, e.g. `/tasks/create`) |
-| `SPATIAL_OIDC_TOKEN_URL`, `SPATIAL_OIDC_CLIENT_SECRET`, `SPATIAL_OIDC_USERNAME`, `SPATIAL_OIDC_PASSWORD` | machine grants (CI): any of them switches from the user login to the password or client-credentials grant, token cached and renewed |
+| `SPATIAL_OIDC_TOKEN_URL`, `SPATIAL_OIDC_CLIENT_SECRET`, `SPATIAL_OIDC_USERNAME`, `SPATIAL_OIDC_PASSWORD` | machine grants (CI): any of them switches from the experimental user login to the password or client-credentials grant, token cached and renewed |
 | `SPATIAL_API_KEY` | serviceKey, only for `/tasks/create` and `/tasks/cancel` without a user |
 | `SPATIAL_READONLY=1` / `--readonly` | refuse every write |
 | `SPATIAL_ALLOWED_DIRS` | `:`-separated directories zips may be read from |

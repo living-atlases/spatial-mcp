@@ -186,11 +186,11 @@ export function createServer(deps: ServerDeps): McpServer {
   }));
 
   if (oidc) {
-    tool("spatial_login", "local", "Log in to the portal (OIDC): opens the portal's login page in the user's browser and waits for it. Returns who is logged in, or the URL to open if the user has not finished yet (call again once they have). force:true logs in again, e.g. as another user", { force: z.boolean().default(false) }, async ({ force }) => {
+    tool("spatial_login", "local", "Experimental: log in to the portal (OIDC): opens the portal's login page in the user's browser and waits for it. Returns who is logged in, or the URL to open if the user has not finished yet (call again once they have). force:true logs in again, e.g. as another user", { force: z.boolean().default(false) }, async ({ force }) => {
       const s = await oidc.login(force);
       return s.loggedIn ? { ...s, pendingLogin: undefined } : { ...s, message: s.pendingLogin?.userCode ? `Ask the user to open ${s.pendingLogin.url} and enter the code ${s.pendingLogin.userCode}, then call spatial_login again.` : `Ask the user to finish the login in the browser (or open ${s.pendingLogin?.url}), then call spatial_login again.` };
     });
-    tool("spatial_logout", "local", "Forget the OIDC login (removes the refresh token from the keyring)", { confirm }, async (a) => confirmOnly(a, "log out of the portal") ?? (await oidc.logout(), { loggedIn: false }));
+    tool("spatial_logout", "local", "Experimental: forget the OIDC login (removes the refresh token from the keyring)", { confirm }, async (a) => confirmOnly(a, "log out of the portal") ?? (await oidc.logout(), { loggedIn: false }));
   }
 
   tool("spatial_capabilities", "read", "Tasks (analyses and maintenance processes) this spatial-service can run, with their input specs. Admins see private ones too", {}, async () => {
