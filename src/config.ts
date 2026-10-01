@@ -44,6 +44,8 @@ export interface OidcConfig {
 }
 
 export interface Config {
+  /** Where the refresh token and the fallback admin password are kept (SPATIAL_TOKEN_STORE). */
+  tokenStore?: "auto" | "keyring" | "file";
   /** The user's own OIDC login (browser/device), when a public client is configured. */
   interactive?: InteractiveOidcConfig;
   url: string;
@@ -86,6 +88,7 @@ export function loadConfig(argv: string[] = process.argv.slice(2), env: NodeJS.P
     geoserverUrl,
     readonly: /^(1|true|yes)$/i.test(env["SPATIAL_READONLY"] ?? "") || argv.includes("--readonly"),
     token: env["SPATIAL_TOKEN"] || undefined,
+    tokenStore: oneOf(env, "SPATIAL_TOKEN_STORE", ["auto", "keyring", "file"] as const, "auto"),
     interactive,
     oidc,
     apiKey: env["SPATIAL_API_KEY"] || undefined,
@@ -104,22 +107,23 @@ function loginFrom(env: NodeJS.ProcessEnv) {
 function interactiveFrom(env: NodeJS.ProcessEnv, clientId: string): InteractiveOidcConfig {
   const issuer = env["SPATIAL_OIDC_ISSUER"];
   if (!issuer) throw new Error("SPATIAL_OIDC_CLIENT_ID is set but SPATIAL_OIDC_ISSUER is not");
-  const oneOf = <T extends string>(name: string, allowed: readonly T[], def: T): T => {
-    const v = (env[name] || def) as T;
-    if (!allowed.includes(v)) throw new Error(`${name} must be one of ${allowed.join(", ")}`);
-    return v;
-  };
   return {
     issuer,
     clientId,
     scope: env["SPATIAL_OIDC_SCOPE"] ?? "openid profile email roles ala offline_access",
-    flow: oneOf("SPATIAL_OIDC_FLOW", ["browser", "device"], "browser"),
+    flow: oneOf(env, "SPATIAL_OIDC_FLOW", ["browser", "device"], "browser"),
     redirectPort: Number(env["SPATIAL_OIDC_REDIRECT_PORT"] ?? 0),
-    redirectHost: oneOf("SPATIAL_OIDC_REDIRECT_HOST", ["127.0.0.1", "localhost"], "127.0.0.1"),
-    tokenStore: oneOf("SPATIAL_TOKEN_STORE", ["auto", "keyring", "file"], "auto"),
+    redirectHost: oneOf(env, "SPATIAL_OIDC_REDIRECT_HOST", ["127.0.0.1", "localhost"], "127.0.0.1"),
+    tokenStore: oneOf(env, "SPATIAL_TOKEN_STORE", ["auto", "keyring", "file"] as const, "auto"),
     loginWaitMs: Number(env["SPATIAL_OIDC_LOGIN_WAIT_MS"] ?? 45_000),
   };
 }
 
 /** Values that must never reach the model. */
 export const secretsOf = (c: Config) => [c.token, c.apiKey, c.oidc?.clientSecret, c.oidc?.password, c.login?.password];
+
+function oneOf<T extends string>(env: NodeJS.ProcessEnv, name: string, allowed: readonly T[], def: T): T {
+  const v = (env[name] || def) as T;
+  if (!allowed.includes(v)) throw new Error(`${name} must be one of ${allowed.join(", ")}`);
+  return v;
+}

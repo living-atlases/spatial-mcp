@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdtempSync, statSync } from "node:fs";
+import { mkdtempSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, afterEach, before, describe, test } from "node:test";
@@ -15,6 +15,7 @@ import { FileStore, KeyringStore, type TokenStore } from "../src/token-store.ts"
 import { WebSession } from "../src/web-session.ts";
 import { startFakeIdp } from "./helpers/fake-idp.ts";
 import { startFakeSpatial } from "./helpers/fake-spatial.ts";
+import { shapefileZip } from "./helpers/shapefile-fixture.ts";
 
 type Idp = Awaited<ReturnType<typeof startFakeIdp>>;
 let idp: Idp;
@@ -261,10 +262,11 @@ describe("over MCP", () => {
   afterEach(async () => {
     for (const close of open.splice(0)) await close().catch(() => undefined);
   });
-  async function connect(opts: { strict?: boolean; autoBrowse?: boolean; store?: MemoryStore } = {}) {
+  async function connect(opts: { strict?: boolean; autoBrowse?: boolean; store?: MemoryStore; storedPassword?: boolean } = {}) {
     const fake = await startFakeSpatial({ acceptToken: idp.validAccessToken, bearerOnAdminPages: !opts.strict });
     const { auth, opened, store } = makeAuth({ autoBrowse: opts.autoBrowse, loginWaitMs: opts.autoBrowse === false ? 50 : 5000, store: opts.store });
-    const client = new SpatialClient(fake.url, { auth, apiKey: "service-key" });
+    const session = opts.storedPassword ? new WebSession(fake.login.username, async () => fake.login.password) : undefined;
+    const client = new SpatialClient(fake.url, { auth, apiKey: "service-key", session });
     const server = createServer({ client, auth, config: { readonly: false, geoserverUrl: fake.geoserver, pollWaitMs: 1000 }, pollEveryMs: 10 });
     const [a, b] = InMemoryTransport.createLinkedPair();
     const mcp = new Client({ name: "test", version: "0" });
@@ -345,4 +347,31 @@ describe("over MCP", () => {
     assert.match(h.json.admin, /refuses OIDC tokens on its admin pages/);
     await c.close();
   });
+
+  test("3.1.0 with OIDC and the admin password in the keyring: admin pages use the session without waiting for a login", async () => {
+    const c = await connect({ strict: true, autoBrowse: false, storedPassword: true });
+    const before = await c.call("spatial_list_uploads");
+    assert.equal(before.isError, false, before.text);
+    assert.equal(c.opened.length, 0, "no browser login for an admin page when the session can do it");
+    const h0 = await c.call("spatial_health");
+    assert.equal(h0.json.admin, "ok");
+    assert.match(h0.json.auth.adminPagesFallback, /web session/);
+
+    const pending = await c.call("spatial_login");
+    await idp.browse(pending.json.pendingLogin.url);
+    assert.equal((await c.call("spatial_login")).json.loggedIn, true);
+    assert.equal((await c.call("spatial_list_uploads")).isError, false);
+    const h = await c.call("spatial_health");
+    assert.equal(h.json.auth.adminPagesAcceptToken, false);
+    assert.equal(h.json.admin, "ok");
+
+    const zip = join(mkdtempSync(join(tmpdir(), "spatial-mcp-oidc-")), "regions.zip");
+    writeFileSync(zip, shapefileZip());
+    const add = await c.call("spatial_add_layer", { path: zip, name: "mcp_poc_oidc", sname: "NAME", dryRun: false, confirm: true });
+    assert.equal(add.isError, false, add.text);
+    assert.deepEqual(add.json.fieldIds, ["cl9001"]);
+    assert.equal(add.json.intersectConfigReloaded, true, add.text);
+    assert.equal(c.fake.state.requests.filter((x) => x === "POST /cas/login").length, 1, "one session login");
+  });
 });
+

@@ -216,7 +216,9 @@ export class SpatialClient {
     const session = o.session === false ? undefined : this.opts.session;
     const send = async () => {
       const headers: Record<string, string> = { Accept: o.accept ?? "application/json" };
-      if (o.user) Object.assign(headers, await this.auth.headers());
+      // With a web session to fall back on, an admin page never waits for an interactive OIDC login: the token is
+      // sent if there is one, else the session logs in (spatial-service 3.1.0 only honours the session there anyway).
+      if (o.user) Object.assign(headers, await this.auth.headers({ interactive: !(session && isAdminPage(path)) }));
       // "always": endpoints that only accept the serviceKey (@RequireApiKey), whatever user credentials go along
       if (o.apiKey && this.opts.apiKey && (o.apiKey === "always" || !headers["Authorization"])) headers["apiKey"] = this.opts.apiKey;
       const cookie = o.user ? session?.cookieFor(url) : undefined;

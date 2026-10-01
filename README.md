@@ -169,7 +169,8 @@ if your version does not, set `SPATIAL_OIDC_REDIRECT_PORT` and register that exa
 Device Authorization Grant* on, for `SPATIAL_OIDC_FLOW=device`. Add a *User Realm Role* mapper with token claim name
 `role` (multivalued, in the access token), so spatial-service sees the admin role. spatial-service also requires a
 `client_id` claim by default: if your access tokens lack it (they carry `azp`), add a *Hardcoded claim* mapper
-`client_id` = `spatial-mcp`, or drop it from `security.jwt.requiredClaims`.
+`client_id` = `spatial-mcp`, or drop it from `security.jwt.requiredClaims`. Keycloak refuses scopes it does not
+know (`ala` is CAS's): set `SPATIAL_OIDC_SCOPE=openid profile email offline_access`.
 
 **Amazon Cognito**: an app client *without* a client secret, *Authorization code grant*, scopes `openid profile email`,
 callback URL `http://localhost:8765/callback` (Cognito only allows `http` for `localhost`, with an exact port), then

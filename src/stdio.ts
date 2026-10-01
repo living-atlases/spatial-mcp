@@ -20,7 +20,7 @@ export function authFor(config: Config): Auth {
 export function sessionFor(config: Config): WebSession | undefined {
   const login = config.login;
   if (!login) return undefined;
-  const store = () => openTokenStore(passwordKey(config.url, login.username), config.interactive?.tokenStore);
+  const store = () => openTokenStore(passwordKey(config.url, login.username), config.tokenStore);
   return new WebSession(login.username, login.password ?? (async () => (await store()).load()));
 }
 
@@ -53,7 +53,7 @@ export async function cli(cmd: string, config: Config = loadConfig(process.argv.
   if (cmd === "set-password" || cmd === "forget-password") {
     const username = config.login?.username;
     if (!username) throw new Error("set SPATIAL_USERNAME (the admin account) first");
-    const store = await openTokenStore(passwordKey(config.url, username), config.interactive?.tokenStore);
+    const store = await openTokenStore(passwordKey(config.url, username), config.tokenStore);
     if (cmd === "forget-password") {
       await store.clear();
       console.error(`forgot the password of ${username} for ${new URL(config.url).origin}`);
