@@ -226,7 +226,7 @@ export function createServer(deps: ServerDeps): McpServer {
       throw e;
     }
   });
-  tool("spatial_run_task", "write", "Run a task via /tasks/create: a user analysis (AreaReport, AooEoo, PointsToGrid…) or, for admins, a maintenance process (Thumbnails, TabulationCreate, LayerDistancesCreate, StandardizeLayers…). See spatial_capabilities for names and inputs", { name: z.string(), input: z.record(z.unknown()).default({}), dryRun, confirm }, async (a) => {
+  tool("spatial_run_task", "write", "Run a task via /tasks/create: a user analysis (AreaReport, AooEoo, PointsToGrid…) or, for admins, a maintenance process (Thumbnails, TabulationCreate, LayerDistancesCreate, StandardizeLayers…). See spatial_capabilities for names and inputs", { name: z.string(), input: z.record(z.string(), z.unknown()).default({}), dryRun, confirm }, async (a) => {
     const caps = await client.capabilities().catch(() => ({}) as Record<string, never>);
     const spec = (caps as Record<string, { input?: Record<string, { type?: string; constraints?: { optional?: boolean } }> }>)[a.name];
     const problems: string[] = [];
@@ -331,7 +331,7 @@ export function createServer(deps: ServerDeps): McpServer {
 
   // ---------------- areas (help "Import > Areas") ----------------
 
-  tool("spatial_create_area", "write", "Create a user area from WKT or GeoJSON (returns its pid, usable in analyses)", { name: z.string(), description: z.string().default(""), wkt: z.string().optional(), geojson: z.record(z.unknown()).optional(), dryRun, confirm }, async (a) => {
+  tool("spatial_create_area", "write", "Create a user area from WKT or GeoJSON (returns its pid, usable in analyses)", { name: z.string(), description: z.string().default(""), wkt: z.string().optional(), geojson: z.record(z.string(), z.unknown()).optional(), dryRun, confirm }, async (a) => {
     if (!a.wkt === !a.geojson) throw new Error("give exactly one of wkt or geojson");
     if (mustConfirm(a)) return { dryRun: true, name: a.name, geometry: a.wkt ? `WKT (${a.wkt.length} chars)` : "GeoJSON" };
     const r = a.wkt ? await client.createAreaWkt(a.wkt, a.name, a.description) : await client.createAreaGeojson(a.geojson, a.name, a.description);

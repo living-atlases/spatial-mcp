@@ -216,7 +216,7 @@ transport of this server gives users the same "nothing to install" experience wi
 
 ### CI
 
-- **GitHub Actions** (`.github/workflows/ci.yml`): unit tests on Node 20/22, build, `npm audit`, and the anonymous
+- **GitHub Actions** (`.github/workflows/ci.yml`): unit tests on Node 20/22 and build; `npm audit` in its own job (only a warning on the nightly run, Dependabot opens the fix); and the anonymous
   integration tests against spatial.l-a.site (nightly too, to catch drift of the public API), skipped while that
   stack is down.
 - **Jenkins** (jenkins.gbif.es, job `spatial-mcp-tests`, `Jenkinsfile`, `jenkins/config.xml`): runs next to the LA
