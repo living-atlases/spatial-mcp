@@ -39,7 +39,7 @@ the file, shows you what it is going to do, and only does it after you say yes.
 ## Before you start
 
 You need:
-1. **Node.js 20 or later** on the computer where the assistant runs.
+1. **Node.js 22 or later** on the computer where the assistant runs.
 2. **An admin account** on the portal: the same username (e-mail) and password you use to log in to the
    spatial admin pages, with the admin role (e.g. `ROLE_ADMIN`). The assistant logs in with it the way your
    browser does. Without an account you can still use the read-only tools (list layers, fields, intersect…).
