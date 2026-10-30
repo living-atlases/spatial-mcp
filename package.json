@@ -1,7 +1,7 @@
 {
   "name": "spatial-mcp",
   "version": "0.1.0",
-  "description": "POC: experimental MCP server for routine ALA spatial-service admin tasks (adding layers, tasks, areas, analyses)",
+  "description": "MCP server for routine ALA spatial-service admin tasks (adding layers, tasks, areas, analyses)",
   "type": "module",
   "license": "MPL-2.0",
   "engines": {

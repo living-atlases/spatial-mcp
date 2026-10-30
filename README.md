@@ -1,6 +1,6 @@
 # spatial-mcp
 
-> **Experimental proof of concept.** This is not production software and it is not an ALA
+> **Widely tested on gbif.es**, adding and updating a large number of layers. It is not an ALA product.
 > Try it on a test portal first (for example the LA demo, spatial.l-a.site), never directly on production.
 
 spatial-mcp lets you administer a Living Atlases **Spatial Portal** by talking to an AI assistant (Claude, or any
@@ -156,7 +156,7 @@ any layer added by hand, and after the restart mentioned above a point query ans
   can read). It and any tokens are never shown to the assistant, not even in error messages.
 - **`SPATIAL_READONLY=1`** turns it into a look-only tool.
 
-It is still a proof of concept: use a test portal, and keep an eye on what it does.
+Start on a test portal, and keep an eye on what it does.
 
 ## When something goes wrong
 
