@@ -30,11 +30,11 @@
     "zod": "^4.1.0"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
+    "@types/node": "^22.20.5",
     "openapi-typescript": "^7.13.0",
     "typescript": "^5.9.3"
   },
   "optionalDependencies": {
-    "@napi-rs/keyring": "^2.1.0"
+    "@napi-rs/keyring": "^2.1.2"
   }
 }
